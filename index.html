@@ -1,0 +1,1266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050912">
+<meta name="robots" content="noindex, nofollow">
+<title>스마트 알림판</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 1920 × 1080 을 기준으로 그리고, 화면 크기에 맞춰 통째로 키우고 줄인다. 아래 px 는 모두 그 기준 값이다. */
+:root{
+  --bg:#050912;
+  --ink:#f7f9ff; --ink-2:#c9d1ea; --ink-3:#8f9bbd;
+  --line:rgba(255,255,255,.11);
+  --today:#ffcf4d; --next:#62d4ff; --notice:#ff8a78; --pray:#cdb4ff; --stu:#ffb7d8; --ok:#46d58d;
+  --sans:"Pretendard Variable",Pretendard,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","Nanum Gothic",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;user-select:none;-webkit-user-select:none}
+body.idle,body.idle *{cursor:none!important}
+
+#stage{
+  position:absolute;left:0;top:0;transform-origin:0 0;
+  display:flex;flex-direction:column;gap:16px;padding:22px 32px 12px;
+  background:
+    radial-gradient(1500px 820px at 12% -18%,#13224b 0%,rgba(19,34,75,0) 62%),
+    radial-gradient(1300px 760px at 104% 112%,#22144a 0%,rgba(34,20,74,0) 58%),
+    var(--bg);
+}
+
+/* ── 머리: 시계 · 날짜 ─────────────────────────────── */
+.top{flex:none;display:flex;align-items:center;justify-content:space-between;height:126px}
+.when{display:flex;align-items:center;gap:34px}
+.clock{font-size:132px;font-weight:800;line-height:1;letter-spacing:-.025em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 44px rgba(120,160,255,.35)}
+.clock .c{display:inline-block;margin:0 .03em;transform:translateY(-.06em);animation:blink 1s steps(1,end) infinite}
+@keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:.18}}
+.date{display:flex;flex-direction:column;gap:4px;line-height:1.04}
+.date .md{font-size:62px;font-weight:800}
+.date .wd{font-size:44px;font-weight:700;color:var(--ink-2)}
+.date .wd.sat{color:var(--next)} .date .wd.sun{color:var(--notice)}
+.brand{display:flex;align-items:center;gap:16px;font-size:38px;font-weight:800;color:var(--ink-2)}
+.brand svg{width:54px;height:54px;flex:none}
+.wx{display:flex;align-items:center;gap:18px;padding:8px 28px 8px 20px;border-radius:28px;background:rgba(255,255,255,.055);border:1.5px solid var(--line)}
+.wxi{width:78px;height:78px;flex:none}
+.wx .now{font-size:72px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.wx .sub{display:flex;flex-direction:column;gap:1px;font-size:29px;font-weight:700;line-height:1.14;color:var(--ink-2);white-space:nowrap}
+.wx .sub b{font-weight:800;color:#fff}
+.none-pill{font-size:28px;font-weight:700;color:var(--ink-3);border:1.5px solid var(--line);border-radius:999px;padding:4px 18px;margin-left:8px}
+
+/* ── 오늘 · 내일 카드 ─────────────────────────────── */
+.days{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.card{
+  --acc:var(--today);
+  position:relative;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  border-radius:32px;padding:22px 30px 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.035));
+  border:1.5px solid var(--line);
+}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:9px;background:var(--acc)}
+.card.today{box-shadow:0 0 0 2px rgba(255,207,77,.5),0 24px 70px -28px rgba(255,207,77,.45)}
+.card.next{--acc:var(--next)}
+.card-h{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 18px;padding-bottom:12px;border-bottom:1.5px solid rgba(255,255,255,.12)}
+.dl{display:flex;align-items:baseline;gap:16px;min-width:0}
+.dl b{font-size:58px;font-weight:900;color:var(--acc);white-space:nowrap}
+.dl span{font-size:40px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.dl em{font-style:normal;font-size:26px;font-weight:700;color:var(--ink-3);border:1.5px solid var(--line);border-radius:999px;padding:2px 14px;white-space:nowrap;align-self:center}
+.hd-r{display:flex;align-items:center;gap:20px;flex:none}
+.night{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
+.night i{font-style:normal;font-size:27px;font-weight:700;color:var(--ink-3)}
+.night b{font-size:46px;font-weight:800;color:#fff}
+.night.off b{font-size:36px;font-weight:700;color:var(--ink-3)}
+.pg{font-size:28px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;min-width:2.4em;text-align:right}
+
+/* ── 일정 줄 ───────────────────────────────────────── */
+.list{list-style:none;flex:1 1 0;min-height:0;overflow:hidden;font-size:var(--fs,54px);padding-top:4px}
+.list.flip{animation:flip .45s ease-out}
+@keyframes flip{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.ev{display:flex;align-items:baseline;gap:.4em;padding:.2em 0;border-bottom:1px solid rgba(255,255,255,.085);line-height:1.24}
+.ev:last-child{border-bottom:0}
+.cb{flex:none;width:max(2.9em,120px)}                 /* 칩이 들어가는 칸: 부서 이름이 길든 짧든 폭이 같다 */
+.chip{
+  display:block;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:max(.66em,27px);font-weight:800;line-height:1.3;padding:.16em .1em;border-radius:.42em;
+  background:hsl(var(--dh) calc(var(--ds) + 24%) 80%);color:hsl(var(--dh) 55% 13%);
+}
+.chip.l5{font-size:max(.54em,22px)}          /* 이름이 5자 */
+.chip.l6{font-size:max(.46em,19px)}          /* 6자 */
+.chip.l7{font-size:max(.4em,17px)}           /* 7자 이상 */
+.body{flex:1;min-width:0;font-weight:700;letter-spacing:-.012em;word-break:keep-all;overflow-wrap:anywhere}
+.tg{
+  display:inline-block;font-style:normal;font-size:max(.5em,24px);font-weight:700;line-height:1.25;
+  padding:.06em .5em;margin-left:.45em;border-radius:.4em;white-space:nowrap;vertical-align:.16em;
+  background:rgba(255,255,255,.13);color:var(--ink-2);
+}
+.nw{white-space:nowrap}
+.tg.cat{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:var(--ink-3)}
+.empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;text-align:center;font-size:.8em;font-weight:600;color:var(--ink-3);border:0!important}
+
+/* ── 공지사항 (있을 때만 나타난다) ─────────────────── */
+.notices{
+  flex:none;display:flex;align-items:center;gap:28px;padding:14px 30px;border-radius:30px;
+  background:linear-gradient(90deg,rgba(255,138,120,.24),rgba(255,138,120,.08));
+  border:1.5px solid rgba(255,138,120,.5);
+}
+.notices .nl{flex:none;font-size:38px;font-weight:900;color:#2b0c07;background:var(--notice);border-radius:.45em;padding:.16em .7em}
+.notices .list{flex:1;max-height:184px;padding-top:0;font-size:var(--fs,54px)}
+.nt{position:relative;padding:.1em 0 .1em .7em;font-weight:800;line-height:1.24;word-break:keep-all;overflow-wrap:anywhere}
+.nt::before{content:"";position:absolute;left:0;top:.62em;width:.3em;height:.3em;border-radius:50%;background:var(--notice)}
+.notices .pg{color:var(--notice)}
+
+/* ── 아래 줄: 오늘의 예배(찬송·성경) · 이번 주 기도 · 학생현황 ───────── */
+.info{flex:none;display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.3fr) minmax(0,1fr);gap:18px;height:206px}
+.box{
+  --c:var(--ink-2);
+  display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0;overflow:hidden;
+  border-radius:28px;padding:12px 26px 14px;background:rgba(255,255,255,.05);border:1.5px solid var(--line);
+}
+.box h3{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:28px;font-weight:800;letter-spacing:.05em;color:var(--c);line-height:1.1}
+.box h3 b{font-size:38px;font-weight:900;letter-spacing:0;color:#fff;line-height:1}
+.dv .kv{display:flex;align-items:baseline;gap:.42em;min-width:0;white-space:nowrap;font-size:58px;font-weight:800;line-height:1.18}
+.kv i{font-style:normal;font-size:.5em;font-weight:700;color:var(--ink-3)}
+.kv b{min-width:0;overflow:hidden;text-overflow:clip;font-weight:800}
+.kv.dim b{color:var(--ink-3);font-weight:600}
+.week{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.wk{min-width:0;border-radius:18px;text-align:center;padding:6px 2px 10px;background:rgba(255,255,255,.05)}
+.wk .d{display:block;font-size:28px;font-weight:700;color:var(--ink-3);white-space:nowrap}
+.wk .n{display:block;font-size:52px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1.25}
+.wk.past{opacity:.5}
+.wk.now{background:var(--today);box-shadow:0 0 28px rgba(255,207,77,.35)}
+.wk.now .d{color:#6d4e00} .wk.now .n{color:#241800}
+.wk .n.nil{color:var(--ink-3);font-weight:600}
+.gr{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;gap:0 16px;line-height:1.04}
+.gr span{font-size:29px;font-weight:700;color:var(--ink-3)}
+.gr b{font-size:42px;font-weight:800;min-width:1.8em;text-align:right;font-variant-numeric:tabular-nums}
+.gr em{font-style:normal;font-size:27px;font-weight:600;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
+
+/* ── 아침 예배(7:50~7:55): 그 시간에만 찬송·성경을 화면 가득 ── */
+.worship{
+  display:none;flex:1 1 0;min-height:0;flex-direction:column;justify-content:center;gap:24px;position:relative;overflow:hidden;
+  border-radius:36px;padding:30px 56px 32px;
+  background:linear-gradient(180deg,rgba(205,180,255,.17),rgba(205,180,255,.06));
+  border:2px solid rgba(205,180,255,.55);box-shadow:0 0 0 2px rgba(205,180,255,.22),0 30px 90px -30px rgba(205,180,255,.55);
+}
+.worship::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:var(--pray)}
+.wh{display:flex;align-items:baseline;gap:30px}
+.wh b{font-size:62px;font-weight:900;color:var(--pray)}
+.wh span{font-size:40px;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.wb{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr);gap:0;align-items:stretch}
+.wb.one{grid-template-columns:minmax(0,1fr)}
+.wcol{min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr;padding:0 34px;text-align:center}
+.wcol + .wcol{border-left:2px solid rgba(255,255,255,.16)}          /* 두 칸이 한 줄로 붙어 읽히지 않게 */
+.wcol i{display:block;font-style:normal;font-size:60px;font-weight:800;color:var(--ink-3);letter-spacing:.1em}
+.wcol b{display:block;align-self:center;font-weight:900;line-height:1.14;white-space:nowrap;overflow:hidden;color:#fff;letter-spacing:-.02em}
+.wh .wp{margin-left:auto;font-size:58px;font-weight:800;color:var(--ink-2)}
+.wh .wp strong{margin-left:.35em;font-weight:900;color:#fff}
+.wb.txt{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+/* 가사·본문이 있는 칸: 머리는 한 줄(찬송 430장), 그 아래에 글 */
+.wcol .wtext,.wcol .pg{display:none}
+.wcol.has-text{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);column-gap:22px;align-items:center;text-align:left}
+.wcol.has-text i{font-size:54px}
+.wcol.has-text b{text-align:left}
+.wcol.has-text .pg{display:block;font-size:34px;font-weight:800;color:var(--pray)}
+.wcol.has-text .wtext{display:block;grid-column:1 / -1;align-self:stretch;margin-top:10px;padding:14px 0 0;border-top:2px solid rgba(255,255,255,.14);font-size:var(--fs,48px);line-height:1.34}
+.wtext .vs{padding:.12em 0;font-weight:600;color:#f3f5ff;word-break:keep-all;overflow-wrap:anywhere}
+.wtext .vs.n{padding-left:1.8em;text-indent:-1.8em}
+.wtext .vn{display:inline-block;width:1.5em;margin-right:.3em;text-indent:0;font-size:.6em;font-weight:900;color:var(--pray);vertical-align:.22em}
+#stage.worship-on .days,#stage.worship-on .notices,#stage.worship-on .info{display:none}
+#stage.worship-on .worship{display:flex}
+
+/* ── 맨 아래 줄 · 안내 층 ──────────────────────────── */
+.status{flex:none;height:30px;display:flex;align-items:center;gap:14px;font-size:23px;font-weight:600;color:var(--ink-3);white-space:nowrap;overflow:hidden}
+.dot{flex:none;width:13px;height:13px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
+.dot.warn{background:#ffc04d;box-shadow:0 0 12px #ffc04d}
+.dot.err{background:#ff6b6b;box-shadow:0 0 12px #ff6b6b}
+.status .sp{flex:1}
+.overlay{
+  position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:80px;text-align:center;
+  background:rgba(5,9,18,.94);
+}
+.overlay b{font-size:64px;font-weight:900}
+.overlay p{font-size:36px;font-weight:600;color:var(--ink-2);line-height:1.4;max-width:1400px;word-break:keep-all}
+.overlay small{font-size:28px;color:var(--ink-3);max-width:1500px;word-break:break-all}
+
+/* 세로가 낮은 초광폭 화면: 머리와 아래 줄을 줄여 일정 칸을 지킨다 */
+#stage.compact{gap:12px;padding:14px 28px 8px}
+#stage.compact .top{height:98px}
+#stage.compact .clock{font-size:102px}
+#stage.compact .date .md{font-size:46px}
+#stage.compact .date .wd{font-size:34px}
+#stage.compact .wx{padding:4px 20px 4px 14px;gap:12px;border-radius:22px}
+#stage.compact .wxi{width:58px;height:58px}
+#stage.compact .wx .now{font-size:54px}
+#stage.compact .wx .sub{font-size:22px}
+#stage.compact .brand{font-size:32px}
+#stage.compact .brand svg{width:44px;height:44px}
+#stage.compact .card{padding:14px 26px 8px;border-radius:26px}
+#stage.compact .dl b{font-size:48px}
+#stage.compact .dl span{font-size:34px}
+#stage.compact .night b{font-size:38px}
+#stage.compact .night i{font-size:23px}
+#stage.compact .card-h{padding-bottom:8px}
+#stage.compact .notices{padding:8px 26px;border-radius:24px}
+#stage.compact .notices .nl{font-size:30px}
+#stage.compact .info{height:172px;gap:14px}
+#stage.compact .box{padding:8px 22px 10px;border-radius:22px}
+#stage.compact .box h3{font-size:24px}
+#stage.compact .box h3 b{font-size:32px}
+#stage.compact .dv .kv{font-size:44px}
+#stage.compact .wk .d{font-size:22px}
+#stage.compact .wk .n{font-size:40px}
+#stage.compact .gr span{font-size:23px}
+#stage.compact .gr b{font-size:32px}
+#stage.compact .gr em{font-size:21px}
+#stage.compact .status{height:26px;font-size:20px}
+
+#stage.compact .worship{padding:16px 40px 18px;gap:12px}
+#stage.compact .wh b{font-size:46px}
+#stage.compact .wh span{font-size:32px}
+#stage.compact .wcol i{font-size:42px}
+#stage.compact .wh .wp{font-size:40px}
+
+/* 세로 화면 */
+#stage.portrait .top{height:auto;flex-direction:column;align-items:flex-start;gap:12px}
+#stage.portrait .clock{font-size:150px}
+#stage.portrait .wx{align-self:stretch}
+#stage.portrait .days{grid-template-columns:1fr;grid-auto-rows:1fr}
+#stage.portrait .info{grid-template-columns:1fr;height:auto;gap:14px}
+#stage.portrait .box{gap:10px}
+#stage.portrait .wb{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+#stage.portrait .wb.one{grid-template-rows:minmax(0,1fr)}
+#stage.portrait .wcol + .wcol{border-left:0;border-top:2px solid rgba(255,255,255,.16);margin-top:14px;padding-top:14px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="wx-sun" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="12" fill="#ffcf4d"/>
+      <path d="M32 6v7M32 51v7M6 32h7M51 32h7M13.6 13.6l5 5M45.4 45.4l5 5M13.6 50.4l5-5M45.4 18.6l5-5" stroke="#ffcf4d" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    </symbol>
+    <symbol id="wx-partly" viewBox="0 0 64 64">
+      <circle cx="24" cy="24" r="9" fill="#ffcf4d"/>
+      <path d="M24 6v5M6 24h5M11.3 11.3l3.5 3.5M36.7 11.3l-3.5 3.5M11.3 36.7l3.5-3.5" stroke="#ffcf4d" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M50 54H26a8.5 8.5 0 0 1-1-16.9A12.5 12.5 0 0 1 48 35a9.5 9.5 0 0 1 2 19z" fill="#e6ecfb"/>
+    </symbol>
+    <symbol id="wx-cloud" viewBox="0 0 64 64">
+      <path d="M47 48H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 27 10.5 10.5 0 0 1 47 48z" fill="#e6ecfb"/>
+    </symbol>
+    <symbol id="wx-rain" viewBox="0 0 64 64">
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#e6ecfb"/>
+      <path d="M22 46l-3 9M33 46l-3 9M44 46l-3 9" stroke="#62d4ff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    </symbol>
+    <symbol id="wx-snow" viewBox="0 0 64 64">
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#e6ecfb"/>
+      <g fill="#bfe9ff"><circle cx="21" cy="49" r="3.2"/><circle cx="32" cy="55" r="3.2"/><circle cx="43" cy="49" r="3.2"/></g>
+    </symbol>
+    <symbol id="wx-storm" viewBox="0 0 64 64">
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#c3cce6"/>
+      <path d="M35 38l-9 13h7l-3 11 12-16h-7z" fill="#ffcf4d"/>
+    </symbol>
+    <symbol id="wx-fog" viewBox="0 0 64 64">
+      <path d="M14 22h36M8 32h48M14 42h36M20 52h24" stroke="#aab6d8" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    </symbol>
+  </defs>
+</svg>
+<div id="stage">
+  <header class="top">
+    <div class="when">
+      <div class="clock" id="clock" aria-label="현재 시각"><span id="hh">--</span><span class="c">:</span><span id="mm">--</span></div>
+      <div class="date"><span class="md" id="dmd">-</span><span class="wd" id="dwd">-</span></div>
+    </div>
+    <div class="wx" id="wx" hidden>
+      <svg class="wxi" viewBox="0 0 64 64" aria-hidden="true"><use id="wxUse" href="#wx-sun"/></svg>
+      <b class="now" id="wxNow"></b>
+      <div class="sub"><b id="wxCond"></b><span id="wxRange"></span><span id="wxPop"></span></div>
+    </div>
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M6 26a5 5 0 0 1 5-5h7l26-13v44L18 39h-7a5 5 0 0 1-5-5z" fill="#ff7a59"/>
+        <path d="M14 42l4 15h9l-4-14z" fill="#ffb199"/>
+        <path d="M50 24c4 2.4 6 5.3 6 8.5S54 38.6 50 41" stroke="#ffcf4d" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>스마트 알림판</span>
+      <span class="none-pill" id="noneNotice" hidden>공지 없음</span>
+    </div>
+  </header>
+
+  <section class="worship" id="worship">
+    <div class="wh"><b>아침 예배</b><span id="wTime"></span><span class="wp" id="w-pray" hidden>기도<strong></strong></span></div>
+    <div class="wb" id="wBody">
+      <div class="wcol" id="w-hymn" data-pager><i>찬송</i><b></b><span class="pg"></span><ul class="list wtext" id="w-hymn-text" data-every="25000"></ul></div>
+      <div class="wcol" id="w-bible" data-pager><i>성경</i><b></b><span class="pg"></span><ul class="list wtext" id="w-bible-text" data-every="25000"></ul></div>
+    </div>
+  </section>
+
+  <main class="days">
+    <section class="card today" id="card-today">
+      <div class="card-h">
+        <div class="dl"><b data-r="label">오늘</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
+        <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+      </div>
+      <ul class="list" id="list-today"></ul>
+    </section>
+    <section class="card next" id="card-next">
+      <div class="card-h">
+        <div class="dl"><b data-r="label">내일</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
+        <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+      </div>
+      <ul class="list" id="list-next"></ul>
+    </section>
+  </main>
+
+  <section class="notices" id="notices" hidden>
+    <div class="nl">공지</div>
+    <ul class="list" id="list-notice"></ul>
+    <span class="pg" id="pg-notice"></span>
+  </section>
+
+  <section class="info">
+    <div class="box dv" style="--c:var(--pray)" id="box-dv">
+      <h3>오늘의 예배</h3>
+      <div class="kvs"></div>
+    </div>
+    <div class="box" style="--c:var(--today)" id="box-week">
+      <h3 id="weekTitle">이번 주 기도</h3>
+      <div class="week" id="week"></div>
+    </div>
+    <div class="box" style="--c:var(--stu)" id="box-stu">
+      <h3>학생현황 <b id="stuTotal"></b></h3>
+      <div id="stuRows"></div>
+    </div>
+  </section>
+
+  <footer class="status">
+    <span class="dot" id="dot"></span><span id="stxt">불러오는 중…</span>
+    <span class="sp"></span>
+    <span>날씨 Open-Meteo · 더블클릭: 전체 화면</span>
+  </footer>
+
+  <div class="overlay" id="overlay"><b>자료를 불러오는 중…</b></div>
+</div>
+
+<script>
+"use strict";
+/*
+  스마트 알림판 — 단일 HTML. 빌드도 서버도 없다.
+  자료: 「2026학년도 학사일정」 구글 시트(학사일정 앱과 같은 문서)를 gviz JSONP 로 읽는다. 읽기만 한다.
+    연중행사계획 · 공지사항 · 기도순서 · 자습감독 · 학생현황  (시트 이름으로 읽는다)
+  주소 끝에 붙이는 미리보기 도구:
+    ?demo               시트 없이 예시 자료로 본다
+    ?date=2026-10-01    그날인 것처럼 본다      ?time=07:56   시각을 고정한다
+    ?time=07:52         아침 예배 화면(찬송·성경)을 미리 본다.  ?worship  시간과 상관없이 그 화면을 본다
+*/
+
+/* ============ 설정 ============ */
+const SHEET_ID = "10blDNZ4zjrFU5lwCvgtoD3npwIwcCMQTeqwPgpQ_Ffg";
+const TABS = [
+  { key:"plan",   sheet:"연중행사계획", name:"학사일정" },
+  { key:"notice", sheet:"공지사항",     name:"공지사항" },
+  { key:"pray",   sheet:"기도순서",     name:"기도순서" },
+  { key:"night",  sheet:"자습감독",     name:"자습감독" },
+  { key:"roster", sheet:"학생현황",     name:"학생현황" }
+];
+const TZ = "Asia/Seoul";
+/* 날씨: Open-Meteo (키가 필요 없다). 서울 시청 좌표 — 학교가 서울 안이면 기온은 거의 같다. 끄려면 on:false */
+/* 아침 예배: 이 시간에만 찬송·성경을 화면 가득 보여 준다. 분 단위이고 끝 분까지 포함한다(07:55 는 07:55:59 까지). 요일은 0=일 … 6=토 */
+const WORSHIP = { from:"07:50", to:"07:55", days:[1, 2, 3, 4, 5] };
+const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 * 3600e3 };
+const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
+const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
+const CACHE_KEY = "board:cache:v1";
+
+/* 부서 — [이름, 색상, 채도]. 학사일정 앱과 같은 색을 써서 두 화면의 부서 색이 같다. */
+const DEPTS = [
+  ["교목부",292,40],["교무부",220,44],["연구부",232,42],["상담부",320,38],["정보부",244,40],
+  ["1학년부",16,52],["2학년부",30,54],["3학년부",44,54],["기획위원",254,38],["행정실",210,26],
+  ["국어과",108,40],["영어과",124,38],["수학과",160,42],["사회과",138,36],["과학과",172,42],
+  ["예체능과",184,40],["정보과",196,42],["외국어과",66,46],["기타",212,7]
+];
+const TONE = new Map(DEPTS.map(([n, h, s]) => [n, `--dh:${h};--ds:${s}%`]));
+const tone = d => TONE.get(d) || TONE.get("기타");
+
+/* ============ 유틸 ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const pad = n => String(n).padStart(2, "0");
+const WD = ["일","월","화","수","목","금","토"];
+const ymd = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+const parts = k => k.split("-").map(Number);
+const utc = k => { const [y, m, d] = parts(k); return Date.UTC(y, m - 1, d); };
+const addDays = (k, n) => new Date(utc(k) + n * 864e5).toISOString().slice(0, 10);
+const dowOf = k => new Date(utc(k)).getUTCDay();
+const diffDays = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
+const mdOf = k => { const [, m, d] = parts(k); return `${m}/${d}`; };
+const el = (tag, cls, ...kids) => {
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  for(const k of kids){
+    if(k == null || k === false) continue;
+    e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  }
+  return e;
+};
+const store = {
+  get(k){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }catch{ return null; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} },
+  del(k){ try{ localStorage.removeItem(k); }catch{} }
+};
+
+/* 시각은 어느 컴퓨터에서 열어도 한국 시간으로 본다 */
+const kstFmt = new Intl.DateTimeFormat("en-GB", {
+  timeZone:TZ, hourCycle:"h23", year:"numeric", month:"2-digit", day:"2-digit",
+  hour:"2-digit", minute:"2-digit", second:"2-digit"
+});
+function kstParts(ms){
+  const p = {};
+  for(const x of kstFmt.formatToParts(ms == null ? new Date() : new Date(ms))) p[x.type] = x.value;
+  return { y:+p.year, m:+p.month, d:+p.day, hh:+p.hour, mm:+p.minute, ss:+p.second };
+}
+const Q = new URLSearchParams(location.search);
+const FAKE = {
+  date: /^\d{4}-\d{2}-\d{2}$/.test(Q.get("date") || "") ? Q.get("date") : null,
+  time: /^\d{1,2}:\d{2}$/.test(Q.get("time") || "") ? Q.get("time") : null
+};
+function now(){
+  const n = kstParts();
+  if(FAKE.date) [n.y, n.m, n.d] = parts(FAKE.date);
+  if(FAKE.time){ [n.hh, n.mm] = FAKE.time.split(":").map(Number); n.ss = 0; }
+  n.key = ymd(n.y, n.m, n.d);
+  return n;
+}
+const hymnText = h => /^\d{1,3}$/.test(h) ? `${h}장` : (h || "");
+const toMin = v => { const [h, m] = v.split(":").map(Number); return h * 60 + m; };
+function worshipNow(n){
+  if(Q.has("worship")) return true;
+  const m = n.hh * 60 + n.mm;
+  return WORSHIP.days.includes(dowOf(n.key)) && m >= toMin(WORSHIP.from) && m <= toMin(WORSHIP.to);
+}
+const schoolYear = () => { const n = kstParts(); return n.m >= 3 ? n.y : n.y - 1; };
+const clockOf = ms => { const p = kstParts(ms); return `${pad(p.hh)}:${pad(p.mm)}`; };
+
+/* ============ 시트 읽기 (gviz JSONP) ============ */
+let seq = 0;
+function gviz(sheet, tq){
+  return new Promise((resolve, reject) => {
+    const cb = `__board${++seq}_${Date.now().toString(36)}`;
+    const s = document.createElement("script");
+    let done = false;
+    const finish = (err, val) => {
+      if(done) return;
+      done = true;
+      clearTimeout(timer);
+      window[cb] = () => {};
+      setTimeout(() => { delete window[cb]; }, 60e3);
+      s.remove();
+      err ? reject(err) : resolve(val);
+    };
+    const timer = setTimeout(() => finish(new Error("응답 시간 초과")), TIMEOUT_MS);
+    window[cb] = res => {
+      if(!res || res.status === "error"){
+        const e = res && res.errors && res.errors[0];
+        const msg = e && (e.detailed_message || e.message || e.reason);
+        finish(new Error(msg ? String(msg).replace(/<[^>]*>/g, "") : "시트가 오류를 돌려주었습니다"));
+        return;
+      }
+      const t = res.table;
+      if(!t || !Array.isArray(t.rows) || !Array.isArray(t.cols)){ finish(new Error("표 형식이 아닙니다")); return; }
+      finish(null, t);
+    };
+    s.onerror = () => finish(new Error("연결하지 못했습니다"));
+    /* 비공개 시트는 로그인 페이지를 돌려줘 콜백이 불리지 않는다 */
+    s.onload = () => setTimeout(() => finish(new Error("시트를 읽을 수 없습니다 (공유 설정 확인)")), 50);
+    s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}`
+      + `&sheet=${encodeURIComponent(sheet)}` + (tq ? `&tq=${encodeURIComponent(tq)}` : "") + `&_=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+
+/* ============ 셀 해석 ============ */
+const cText = c => !c ? "" : (c.f != null && c.f !== "") ? String(c.f).trim() : (c.v == null ? "" : String(c.v).trim());
+const valid = (y, m, d) => {
+  if(!(y > 1900 && m >= 1 && m <= 12 && d >= 1 && d <= 31)) return null;
+  return new Date(y, m - 1, d).getMonth() === m - 1 ? ymd(y, m, d) : null;
+};
+/* MM-DD 로만 적힌 날짜의 연도: 12월 → 1월로 넘어가면 해를 올린다 */
+function yearCursor(start){
+  let year = start, last = 0;
+  return {
+    year(m){ if(last && m < last && last - m >= 6) year++; last = m; return year; },
+    seen(m, y){ year = y; last = m; }
+  };
+}
+function cellDate(c, cur){
+  if(!c) return null;
+  if(typeof c.v === "string"){
+    const g = c.v.match(/^Date\((\d+),\s*(\d+),\s*(\d+)/);
+    if(g){ if(cur) cur.seen(+g[2] + 1, +g[1]); return valid(+g[1], +g[2] + 1, +g[3]); }
+  }
+  const t = cText(c);
+  let m = t.match(/(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/);
+  if(m){ if(cur) cur.seen(+m[2], +m[1]); return valid(+m[1], +m[2], +m[3]); }
+  m = t.match(/^(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})\s*일?$/);
+  if(m && cur) return valid(cur.year(+m[1]), +m[1], +m[2]);
+  return null;
+}
+/* 머리글 줄을 찾아 열 위치를 정한다. 못 찾으면 시트의 현재 배치를 쓴다. */
+function columns(table, fallback){
+  const names = Object.keys(fallback), out = { ...fallback };
+  for(const r of table.rows.slice(0, 8)){
+    const t = (r.c || []).map(cText);
+    if(names.filter(n => t.includes(n)).length >= Math.min(2, names.length)){
+      names.forEach(n => { const i = t.indexOf(n); if(i >= 0) out[n] = i; });
+      return out;
+    }
+  }
+  const labels = (table.cols || []).map(c => String(c.label || "").trim().split(/\s+/).pop());
+  names.forEach(n => { const i = labels.indexOf(n); if(i >= 0) out[n] = i; });
+  return out;
+}
+
+/* ============ 일정 한 줄 해석 ============ */
+const CIRCLED = { "①":1, "②":2, "③":3 };
+/* "[교무부]개학식(②③,1) [교무부]입학식(①,2시)" → 줄 단위, 한 줄에 [부서]가 여럿이면 갈라서 */
+function splitCell(text){
+  const out = [];
+  for(const line of String(text || "").replace(/\r/g, "").split("\n")){
+    for(const piece of line.split(/\s+(?=\[[^\[\]]{1,20}\])/)){
+      const s = piece.trim();
+      if(!s || s === "null") continue;
+      if(s.startsWith("[") || !out.length) out.push(s);
+      else out[out.length - 1] += " " + s;
+    }
+  }
+  return out;
+}
+const circledGrades = s => [...new Set([...s].map(ch => CIRCLED[ch]).filter(Boolean))].sort();
+const PERIOD_TOKEN = /^(\d)\s*(?:[~\-–]\s*(\d))?\s*(?:교시)?$/;
+const RANGE_TOKEN = /^~\s*\d{1,2}(?:\s*[\/.]\s*\d{1,2})?\s*일?$/;
+function findPeriods(s){
+  const set = new Set();
+  const add = (a, b) => { a = +a; b = b ? +b : a; if(a < 1 || b > 9 || b < a) return; for(let k = a; k <= b; k++) set.add(k); };
+  for(const m of s.matchAll(/(\d)\s*(?:[~\-–]\s*(\d)\s*)?교시/g)) add(m[1], m[2]);
+  for(const g of s.matchAll(/\(([^()]*)\)/g)){
+    for(const tok of g[1].split(/[,，]/)){
+      const m = tok.replace(/[①②③]/g, "").trim().match(PERIOD_TOKEN);
+      if(m) add(m[1], m[2]);
+    }
+  }
+  return [...set].sort((a, b) => a - b);
+}
+/* "(~3/11)", "(②, ~13일)" 처럼 끝나는 날이 적힌 일정 */
+function findEnd(s, start){
+  const [sy, sm, sd] = parts(start);
+  let y = sy, mo, d;
+  let m = s.match(/~\s*(\d{1,2})\s*[\/.]\s*(\d{1,2})/);
+  if(m){
+    mo = +m[1]; d = +m[2];
+    if(mo < sm && sm - mo >= 6) y++;
+  }else{
+    m = null;
+    for(const x of s.matchAll(/~\s*(\d{1,2})\s*일?(?=\s*[),]|\s*$)/g)){
+      if(/\d\s*$/.test(s.slice(0, x.index))) continue;     /* "1~3" 처럼 숫자 바로 뒤의 ~ 는 범위다 */
+      m = x; break;
+    }
+    if(!m) return null;
+    mo = sm; d = +m[1];
+    if(d < sd){ mo++; if(mo > 12){ mo = 1; y++; } }
+  }
+  const k = valid(y, mo, d);
+  return k && k > start ? k : null;
+}
+/* 학년·교시·기간만 담긴 괄호는 태그로 따로 보이므로 본문에서 뺀다 */
+function cleanText(s){
+  return s.replace(/\s*\(([^()]*)\)/g, (all, inner) => {
+    const toks = inner.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+    const rest = toks.filter(t => {
+      const x = t.replace(/[①②③]/g, "").trim();
+      return !(x === "" || PERIOD_TOKEN.test(x) || RANGE_TOKEN.test(x));
+    });
+    if(rest.length === toks.length) return all;
+    return rest.length ? `(${rest.join(", ")})` : "";
+  }).replace(/\s{2,}/g, " ").trim();
+}
+function parseItem(src, date){
+  let s = src.trim(), dept = "", cat = "";
+  let m = s.match(/^\[([^\]]{1,20})\]\s*/);
+  if(m){ dept = m[1].trim(); s = s.slice(m[0].length); }
+  m = s.match(/^<([^>]{1,10})>\s*/);
+  if(m){ cat = m[1].trim(); s = s.slice(m[0].length); }
+  return { dept, cat, text:cleanText(s) || s, grades:circledGrades(s), periods:findPeriods(s), until:findEnd(s, date) };
+}
+
+/* ============ 시트별 해석 ============ */
+function parsePlan(t){
+  const h = columns(t, { "날짜":0, "요일":1, "일정":2 });
+  const byDate = {}, dates = new Set();
+  for(const r of t.rows){
+    const c = r.c || [];
+    const date = cellDate(c[h["날짜"]]);
+    if(!date) continue;
+    dates.add(date);
+    const items = splitCell(cText(c[h["일정"]])).map(s => parseItem(s, date)).filter(it => it.text && it.text !== "null");
+    if(items.length) (byDate[date] = byDate[date] || []).push(...items);
+  }
+  if(!dates.size) throw new Error("날짜가 적힌 줄을 찾지 못했습니다");
+  return { byDate, dates:[...dates].sort() };
+}
+function parseNotice(t){
+  const h = columns(t, { "게시 시작일":0, "게시 종료일":1, "내용":2 });
+  const out = [];
+  for(const r of t.rows){
+    const c = r.c || [];
+    const text = cText(c[h["내용"]]);
+    if(!text || text === "null") continue;
+    const rawFrom = cText(c[h["게시 시작일"]]), rawTo = cText(c[h["게시 종료일"]]);
+    const from = cellDate(c[h["게시 시작일"]]), to = cellDate(c[h["게시 종료일"]]);
+    if((rawFrom && !from) || (rawTo && !to)) continue;      /* 기간을 못 읽는 줄은 싣지 않는다 */
+    if(from && to && from > to) continue;
+    out.push({ from, to, text });
+  }
+  return out;
+}
+function parsePray(t){
+  const h = columns(t, { "날짜":0, "요일":1, "이름":2, "성경":3, "찬송":4 });
+  const cur = yearCursor(schoolYear()), out = {};
+  for(const r of t.rows){
+    const c = r.c || [];
+    const date = cellDate(c[h["날짜"]], cur);
+    if(!date) continue;
+    const p = { name:cText(c[h["이름"]]), bible:cText(c[h["성경"]]), hymn:cText(c[h["찬송"]]) };
+    if(p.name || p.bible || p.hymn) out[date] = p;
+  }
+  return out;
+}
+function parseNight(t){
+  const h = columns(t, { "날짜":0, "요일":1, "이름":2 });
+  const cur = yearCursor(schoolYear()), out = {};
+  for(const r of t.rows){
+    const c = r.c || [];
+    const date = cellDate(c[h["날짜"]], cur), name = cText(c[h["이름"]]);
+    if(date && name) out[date] = name;
+  }
+  return out;
+}
+/* 학생현황: 학년마다 [학급 · 담임 · 학생수] 세 칸. 머리글이 열 이름으로 합쳐져 오든 첫 줄로 오든 읽는다. */
+function parseRoster(t){
+  const last = x => String(x || "").trim().split(/\s+/).pop();
+  const grid = [(t.cols || []).map(c => last(c.label)), ...t.rows.map(r => (r.c || []).map(cText))];
+  let hr = -1, cnt = [];
+  for(let i = 0; i < Math.min(grid.length, 8); i++){
+    const idx = grid[i].map((v, j) => last(v) === "학생수" ? j : -1).filter(j => j >= 0);
+    if(idx.length){ hr = i; cnt = idx; break; }
+  }
+  if(hr < 0) throw new Error("학생수 칸을 찾지 못했습니다");
+  const body = hr === 0 ? t.rows : t.rows.slice(hr);
+  const grades = cnt.slice(0, 3).map((col, k) => {
+    const cls = col - 2;
+    const classes = [];
+    for(const r of body){
+      const c = r.c || [];
+      const n = c[col] && typeof c[col].v === "number" ? c[col].v : parseInt(cText(c[col]), 10);
+      const no = c[cls] && typeof c[cls].v === "number" ? c[cls].v : parseInt(cText(c[cls]), 10);
+      if(Number.isInteger(n) && n > 0 && Number.isInteger(no) && no > 0) classes.push({ c:no, n });
+    }
+    return { g:k + 1, classes, total:classes.reduce((a, x) => a + x.n, 0) };
+  }).filter(x => x.classes.length);
+  if(!grades.length) throw new Error("학급별 학생 수를 읽지 못했습니다");
+  return { grades, total:grades.reduce((a, x) => a + x.total, 0) };
+}
+const PARSERS = { plan:parsePlan, notice:parseNotice, pray:parsePray, night:parseNight, roster:parseRoster };
+
+/* ============ 상태 · 저장본 ============ */
+const state = { data:{ plan:null, notice:null, pray:null, night:null, roster:null }, src:{}, loadedAt:0, demo:false, tried:false, wx:null };
+for(const t of TABS) state.src[t.key] = { at:0, error:"" };
+
+function saveCache(){
+  const tabs = {};
+  for(const t of TABS) if(state.data[t.key]) tabs[t.key] = { at:state.src[t.key].at, data:state.data[t.key] };
+  store.set(CACHE_KEY, { v:1, tabs });
+}
+function loadCache(){
+  const c = store.get(CACHE_KEY);
+  if(!c || c.v !== 1 || !c.tabs) return;
+  for(const t of TABS){
+    const x = c.tabs[t.key];
+    if(x && x.data){ state.data[t.key] = x.data; state.src[t.key].at = x.at || 0; state.loadedAt = Math.max(state.loadedAt, x.at || 0); }
+  }
+}
+
+/* ============ 오늘 · 내일 계산 ============ */
+const nextWeekday = k => { let d = addDays(k, 1); while([0, 6].includes(dowOf(d))) d = addDays(d, 1); return d; };
+
+/* 같은 부서·같은 이름의 일정은 한 줄로 묶고, 학년·교시만 태그로 나열한다 */
+function groupItems(items){
+  const out = [], idx = new Map();
+  for(const it of items){
+    const k = [it.dept, it.cat, it.text].join("\u0001");
+    let g = idx.get(k);
+    if(!g){ g = { dept:it.dept, cat:it.cat, text:it.text, vars:[] }; idx.set(k, g); out.push(g); }
+    const v = { grades:it.grades, periods:it.periods, until:it.until };
+    const vk = JSON.stringify(v);
+    if(!g.vars.some(x => JSON.stringify(x) === vk)) g.vars.push(v);
+  }
+  return out;
+}
+function periodLabel(ps){
+  const a = [...ps].sort((x, y) => x - y);
+  const run = a.length > 1 && a.every((v, i) => i === 0 || v === a[i - 1] + 1);
+  return run ? `${a[0]}~${a[a.length - 1]}교시` : `${a.join("·")}교시`;
+}
+function varLabel(v){
+  const out = [];
+  if(v.grades.length) out.push(v.grades.length === 3 ? "전학년" : `${v.grades.join("·")}학년`);
+  if(v.periods.length) out.push(periodLabel(v.periods));
+  if(v.until) out.push(`~${mdOf(v.until)}`);
+  return out.join(" ");
+}
+
+function dayView(k, label, plan, extra){
+  return {
+    key:k, label,
+    sub:extra ? mdOf(k) : `${mdOf(k)} (${WD[dowOf(k)]})`,
+    tag:extra || "",
+    groups:groupItems((plan.byDate && plan.byDate[k]) || []),
+    night:(state.data.night && state.data.night[k]) || ""
+  };
+}
+
+function buildView(n){
+  const t = n.key, D = state.data;
+  const plan = D.plan || { byDate:{}, dates:[] };
+  const dset = new Set(plan.dates);
+  let nx = addDays(t, 1);
+  if(!dset.has(nx)){
+    const later = plan.dates.find(k => k > t);
+    nx = later && diffDays(t, later) <= 10 ? later : nextWeekday(t);
+  }
+  const tomorrow = nx === addDays(t, 1);
+  const today = dayView(t, "오늘", plan);
+  const next = dayView(nx, tomorrow ? "내일" : `${WD[dowOf(nx)]}요일`, plan, tomorrow ? "" : "다음 등교일");
+
+  const notices = (D.notice || []).filter(x => (!x.from || t >= x.from) && (!x.to || t <= x.to));
+
+  /* 이번 주 월~금. 주말이면 다가오는 주를 보여 준다 */
+  const dow = dowOf(t);
+  const mon = dow === 0 ? addDays(t, 1) : dow === 6 ? addDays(t, 2) : addDays(t, 1 - dow);
+  const week = [0, 1, 2, 3, 4].map(i => {
+    const k = addDays(mon, i);
+    const p = D.pray && D.pray[k];
+    return { key:k, wd:WD[dowOf(k)], md:mdOf(k).replace("/", "."), name:(p && p.name) || "", st:k < t ? "past" : k === t ? "now" : "future" };
+  });
+  const p = D.pray && D.pray[t];
+  return {
+    today, next, notices, week,
+    weekTitle:dow === 0 || dow === 6 ? "다음 주 기도" : "이번 주 기도",
+    pray:p || null,
+    worship:worshipNow(n) && p && (p.hymn || p.bible)
+      ? { hymn:p.hymn || "", bible:p.bible || "", name:p.name || "",
+          lyrics:(words[wordKey(p)] && words[wordKey(p)].lyrics) || [], verses:(words[wordKey(p)] && words[wordKey(p)].verses) || [] }
+      : null,
+    roster:D.roster
+  };
+}
+
+/* ============ 그리기 ============ */
+const last = {};                       /* 영역별 마지막 그린 내용 — 같으면 다시 그리지 않아 쪽 넘김이 끊기지 않는다 */
+const pagers = new Map();
+const changed = (k, v) => { const s = JSON.stringify(v); if(last[k] === s) return false; last[k] = s; return true; };
+
+function evRow(g){
+  const li = el("li", "ev");
+  const name = g.dept || "기타";
+  const chip = el("span", "chip" + (name.length >= 7 ? " l7" : name.length === 6 ? " l6" : name.length === 5 ? " l5" : ""), name);
+  chip.style.cssText = tone(g.dept);
+  const body = el("span", "body");
+  if(g.cat) body.append(el("i", "tg cat", g.cat), " ");
+  const tags = [], seen = new Set();
+  for(const v of g.vars){
+    const l = varLabel(v);
+    if(l && !seen.has(l)){ seen.add(l); tags.push(el("i", "tg", l)); }
+  }
+  /* 태그가 혼자 다음 줄로 떨어지지 않게 마지막 낱말과 첫 태그를 한 덩어리로 묶는다 */
+  const m = g.text.match(/^([\s\S]*\s)?(\S+)$/);
+  if(m && m[2].length <= 7 && tags.length){
+    body.append(m[1] || "", el("span", "nw", m[2], tags.shift()));
+  }else body.append(g.text);
+  for(const t of tags) body.append(t);
+  li.append(el("span", "cb", chip), body);
+  return li;
+}
+
+function paintDay(slot, d, emptyMsg){
+  if(!changed("day-" + slot, d)) return false;
+  const card = $("#card-" + slot);
+  const r = k => $(`[data-r="${k}"]`, card);
+  r("label").textContent = d.label;
+  r("sub").textContent = d.sub;
+  const tag = r("tag"); tag.textContent = d.tag; tag.hidden = !d.tag;
+  const nb = r("night");
+  if(d.night){
+    const off = /미\s*운영/.test(d.night);
+    nb.hidden = false;
+    nb.classList.toggle("off", off);
+    $("i", nb).textContent = off ? "" : "자습감독";
+    $("b", nb).textContent = off ? "자습 미운영" : d.night;
+  }else nb.hidden = true;
+  const list = $("#list-" + slot);
+  list.replaceChildren();
+  if(d.groups.length) for(const g of d.groups) list.append(evRow(g));
+  else list.append(el("li", "empty", emptyMsg));
+  return true;
+}
+
+function paintNotices(list){
+  if(!changed("notices", list)) return false;
+  const box = $("#notices"), ul = $("#list-notice");
+  box.hidden = !list.length;
+  $("#noneNotice").hidden = list.length > 0 || !state.data.notice;
+  ul.replaceChildren();
+  for(const x of list) ul.append(el("li", "nt", x.text));
+  return true;
+}
+
+function fillText(ul, items, numbered){
+  ul.replaceChildren();
+  for(const v of items){
+    const li = el("li", "vs" + (numbered && v.n ? " n" : ""));
+    if(numbered && v.n) li.append(el("span", "vn", v.n));
+    li.append(v.t);
+    ul.append(li);
+  }
+}
+function paintWorship(w){
+  if(!changed("worship", w)) return false;
+  $("#stage").classList.toggle("worship-on", !!w);
+  if(!w) return true;
+  $("#wTime").textContent = `${WORSHIP.from} ~ ${WORSHIP.to}`;
+  const col = (id, value, items, numbered) => {
+    const c = $(id), has = !!value && items.length > 0;
+    c.hidden = !value;
+    $("b", c).textContent = value;
+    c.classList.toggle("has-text", has);
+    fillText($(id + "-text"), has ? items : [], numbered);
+    return has;
+  };
+  const hymn = hymnText(w.hymn);
+  const a = col("#w-hymn", hymn, w.lyrics, true), b = col("#w-bible", w.bible, w.verses, w.verses.length > 1);
+  $("#wBody").classList.toggle("one", !hymn || !w.bible);
+  $("#wBody").classList.toggle("txt", a || b);
+  const pr = $("#w-pray"); pr.hidden = !w.name; $("strong", pr).textContent = w.name;
+  return true;
+}
+
+function paintDevotion(p){
+  if(!changed("dv", p ? [p.hymn, p.bible] : null)) return false;
+  const kv = (label, val) => el("div", "kv" + (val ? "" : " dim"), el("i", "", label), el("b", "", val || "—"));
+  $("#box-dv .kvs").replaceChildren(kv("찬송", p && hymnText(p.hymn)), kv("성경", p && p.bible));
+  return true;
+}
+
+function paintWeek(w, title){
+  if(!changed("week", [w, title])) return false;
+  $("#weekTitle").textContent = title;
+  $("#week").replaceChildren(...w.map(x =>
+    el("div", "wk " + x.st, el("span", "d", `${x.wd} ${x.md}`), el("span", "n" + (x.name ? "" : " nil"), x.name || "—"))));
+  return true;
+}
+
+function paintRoster(r){
+  if(!changed("roster", r)) return false;
+  $("#stuTotal").textContent = r ? `${r.total}명` : "";
+  const rows = $("#stuRows");
+  rows.replaceChildren();
+  if(!r){ rows.append(el("div", "gr", el("span", "", "자료 없음"))); return true; }
+  for(const g of r.grades) rows.append(el("div", "gr", el("span", "", `${g.g}학년`), el("b", "", g.total), el("em", "", g.classes.map(c => c.n).join(" · "))));
+  return true;
+}
+
+/* ── 글자 크기 맞추기: 넘치면 줄이고, 그래도 넘치면 쪽으로 나눠 돌려 보인다 ── */
+/* 넘치지 않는 가장 큰 글자 크기 (하나도 안 맞으면 min, 안 보이는 칸이면 null) */
+function bestSize(listEl, max, min){
+  for(const li of listEl.children) li.hidden = false;
+  if(listEl.clientHeight < 40) return null;
+  const set = px => listEl.style.setProperty("--fs", px + "px");
+  const over = () => listEl.scrollHeight > listEl.clientHeight + 1;
+  set(max);
+  if(!over()) return max;
+  set(min);
+  if(over()) return min;
+  let lo = min, hi = max;
+  while(hi - lo > 1){ const mid = (lo + hi) >> 1; set(mid); if(over()) hi = mid; else lo = mid; }
+  return lo;
+}
+/* 정한 크기로 칸을 채우고, min 에서도 넘치면 쪽으로 나눠 돌려 보인다 */
+function applyFit(listEl, fs){
+  pagers.delete(listEl);
+  const items = [...listEl.children];
+  for(const li of items) li.hidden = false;
+  const holder = listEl.closest("[data-pager]") || listEl.parentElement;
+  const pg = holder && holder.querySelector(".pg");
+  if(pg) pg.textContent = "";
+  listEl.classList.remove("flip");
+  if(listEl.clientHeight < 40) return;
+  listEl.style.setProperty("--fs", fs + "px");
+  if(listEl.scrollHeight <= listEl.clientHeight + 1) return;
+  if(items.length < 2 || items[0].classList.contains("empty")) return;
+  const pages = [[]]; let used = 0;
+  const H = listEl.clientHeight;
+  for(const li of items){
+    const h = li.offsetHeight;
+    if(used + h > H + 1 && pages[pages.length - 1].length){ pages.push([]); used = 0; }
+    pages[pages.length - 1].push(li); used += h;
+  }
+  const p = { pages, i:0, pg, every:+listEl.dataset.every || PAGE_MS, t:Date.now() };
+  pagers.set(listEl, p);
+  showPage(listEl, p);
+}
+/* 여러 칸이 같은 글자 크기를 쓰게 한다: 가장 빡빡한 칸에 맞춘다 */
+function fitLists(lists, max, min){
+  const sizes = lists.map(l => bestSize(l, max, min)).filter(v => v != null);
+  const fs = sizes.length ? Math.min(...sizes) : max;
+  for(const l of lists) applyFit(l, fs);
+}
+function showPage(listEl, p){
+  p.pages.forEach((arr, i) => arr.forEach(li => { li.hidden = i !== p.i; }));
+  if(p.pg) p.pg.textContent = `${p.i + 1}/${p.pages.length}`;
+  listEl.classList.remove("flip"); void listEl.offsetWidth; listEl.classList.add("flip");
+}
+function fitWidth(node, max, min){
+  node.style.fontSize = max + "px";
+  if(node.scrollWidth <= node.clientWidth + 1) return;
+  node.style.fontSize = min + "px";
+  if(node.scrollWidth > node.clientWidth + 1) return;
+  let lo = min, hi = max;
+  while(hi - lo > 1){ const mid = (lo + hi) >> 1; node.style.fontSize = mid + "px"; if(node.scrollWidth > node.clientWidth + 1) hi = mid; else lo = mid; }
+  node.style.fontSize = lo + "px";
+}
+/* 여러 글자를 한 줄씩 맞춘 뒤, 그중 가장 작은 크기로 모두 통일한다 */
+function fitWidthAll(nodes, max, min, room = 1){
+  let fs = max;
+  for(const n of nodes){ fitWidth(n, max, min); fs = Math.min(fs, parseFloat(n.style.fontSize) || max); }
+  fs = Math.max(min, Math.floor(fs * room));          /* room: 칸에 딱 붙지 않게 남기는 여백 비율 */
+  for(const n of nodes) n.style.fontSize = fs + "px";
+}
+function fitAll(){
+  const stage = $("#stage"), cp = stage.classList.contains("compact");
+  fitLists([$("#list-notice")], 56, 38);          /* 공지가 차지하는 높이가 정해져야 카드 높이도 정해진다 */
+  fitLists([$("#list-today"), $("#list-next")], 66, 38);   /* 오늘·내일은 글자 크기가 같다 */
+  fitWidthAll([...document.querySelectorAll("#week .n")], cp ? 40 : 52, 22, .92);
+  fitWidthAll([...document.querySelectorAll("#box-dv .kv b")], cp ? 44 : 58, 26);
+  if(stage.classList.contains("worship-on")){
+    const hText = $("#w-hymn").classList.contains("has-text"), bText = $("#w-bible").classList.contains("has-text");
+    fitWidth($("#w-hymn b"), hText ? (cp ? 90 : 120) : (cp ? 300 : 340), 60);       /* 머리(번호)를 먼저 맞춰야 글이 들어갈 높이가 정해진다 */
+    fitWidth($("#w-bible b"), bText ? (cp ? 76 : 100) : (cp ? 170 : 200), 44);
+    fitLists([$("#w-hymn-text")], cp ? 52 : 62, cp ? 36 : 40);                 /* 가사·본문은 각자 가장 큰 글자로 */
+    fitLists([$("#w-bible-text")], cp ? 52 : 62, cp ? 36 : 40);
+  }
+}
+
+/* ── 상태 줄 · 안내 층 ── */
+function paintStatus(){
+  const dot = $("#dot"), txt = $("#stxt"), ov = $("#overlay");
+  const errs = TABS.filter(t => state.src[t.key].error);
+  const have = !!state.data.plan;
+  if(state.demo){
+    dot.className = "dot warn"; txt.textContent = "예시 자료를 보여 주는 중입니다 (?demo)";
+    ov.hidden = true; return;
+  }
+  if(!have){
+    ov.hidden = false;
+    if(!state.tried){ ov.replaceChildren(el("b", "", "자료를 불러오는 중…")); }
+    else{
+      ov.replaceChildren(
+        el("b", "", "자료를 불러오지 못했습니다"),
+        el("p", "", "인터넷 연결과 구글 시트 공유 설정(링크가 있는 모든 사용자 · 뷰어)을 확인해 주세요. 자동으로 다시 시도합니다."),
+        el("small", "", errs.map(t => `${t.name}: ${state.src[t.key].error}`).join("  ·  "))
+      );
+    }
+    dot.className = "dot err"; txt.textContent = state.tried ? "연결되지 않았습니다" : "불러오는 중…";
+    return;
+  }
+  ov.hidden = true;
+  const age = Date.now() - state.loadedAt;
+  if(errs.length === TABS.length){
+    dot.className = "dot err";
+    txt.textContent = `연결되지 않아 ${clockOf(state.loadedAt)} 저장본을 보여 줍니다`;
+  }else if(errs.length){
+    dot.className = "dot warn";
+    txt.textContent = "일부 자료를 받지 못했습니다 — " + errs.map(t => `${t.name}(${state.src[t.key].error})`).join(", ");
+  }else if(age > STALE_MS){
+    dot.className = "dot warn";
+    txt.textContent = `갱신이 ${Math.floor(age / 60e3)}분째 멈춰 있습니다 (마지막 ${clockOf(state.loadedAt)})`;
+  }else{
+    dot.className = "dot";
+    txt.textContent = `${clockOf(state.loadedAt)} 갱신 · 5분마다 자동으로 새로 받습니다`;
+  }
+}
+
+function render(){
+  const v = buildView(now());
+  let dirty = false;
+  dirty = paintWorship(v.worship) || dirty;      /* 화면 구성이 바뀔 수 있으니 가장 먼저 */
+  dirty = paintNotices(v.notices) || dirty;
+  dirty = paintDay("today", v.today, "오늘은 등록된 학사일정이 없습니다") || dirty;
+  dirty = paintDay("next", v.next, "등록된 학사일정이 없습니다") || dirty;
+  dirty = paintDevotion(v.pray) || dirty;
+  dirty = paintWeek(v.week, v.weekTitle) || dirty;
+  dirty = paintRoster(v.roster) || dirty;
+  paintStatus();
+  paintWeather();
+  if(dirty) fitAll();
+}
+
+/* ============ 시계 · 배치 ============ */
+let dayKey = "", reloading = false, lastWorship = null;
+/* 하루 한 번, 새벽에 통째로 다시 열어 오래 켜 둔 화면을 깨끗이 한다. 인터넷이 안 될 때 다시 열면 오류 화면이 뜨므로 그땐 건너뛴다. */
+async function nightlyReload(){
+  if(reloading) return;
+  reloading = true;
+  try{
+    if(location.protocol !== "file:"){
+      const r = await fetch(location.href.split("#")[0], { method:"HEAD", cache:"no-store" });
+      if(!r.ok) throw new Error(r.status);
+    }
+    location.reload();
+  }catch{ reloading = false; }
+}
+function tick(){
+  setTimeout(tick, 1000 - (Date.now() % 1000) + 8);     /* 다음 차례를 먼저 잡아 둔다: 아래에서 오류가 나도 시계는 계속 간다 */
+  try{ tickBody(); }catch(e){ console.error("tick", e); }
+}
+function tickBody(){
+  const n = now();
+  $("#hh").textContent = pad(n.hh);
+  $("#mm").textContent = pad(n.mm);
+  const wd = $("#dwd");
+  $("#dmd").textContent = `${n.m}월 ${n.d}일`;
+  wd.textContent = `${WD[dowOf(n.key)]}요일`;
+  wd.className = "wd" + (dowOf(n.key) === 6 ? " sat" : dowOf(n.key) === 0 ? " sun" : "");
+  const wOn = worshipNow(n);
+  if(n.key !== dayKey || wOn !== lastWorship){ if(n.key !== dayKey) ensureWord(); dayKey = n.key; lastWorship = wOn; render(); }
+  else if(n.ss === 0) paintStatus();
+  if(n.hh === 3 && n.mm === 30 && performance.now() > 6 * 3600e3 && !FAKE.date && !FAKE.time) nightlyReload();
+}
+
+function layout(){
+  const stage = $("#stage"), vw = innerWidth, vh = innerHeight;
+  const portrait = vh > vw * 1.05;
+  const baseW = portrait ? 1080 : 1920, baseH = portrait ? 1500 : 760;
+  const k = Math.min(vw / baseW, vh / baseH);
+  stage.style.width = vw / k + "px";
+  stage.style.height = vh / k + "px";
+  stage.style.transform = `scale(${k})`;
+  stage.classList.toggle("portrait", portrait);
+  stage.classList.toggle("compact", !portrait && vh / k < 900);
+  fitAll();
+}
+
+/* ============ 찬송 가사 · 성경 본문 (아침 예배 화면에서 쓴다) ============ */
+/* 같은 시트의 '찬송가 가사', '성경 말씀' 탭을 이름으로 찾아 조회한다(모바일 앱과 같은 방식). 번호만 평소 화면에 둔다. */
+const WORD_KEY = "board:word:v1";
+const words = store.get(WORD_KEY) || {};            /* "찬송|성경" → { at, lyrics:[{n,t}], verses:[{n,t}], lOk, vOk } */
+const wordBusy = new Set();
+const wordKey = p => `${p.hymn || ""}|${p.bible || ""}`;
+/* "요한복음 8:12", "시 23:1-6" → 책·장·절 범위. 못 읽으면 null (그땐 번호만 보인다) */
+function parseRef(t){
+  const m = String(t || "").match(/^\s*([가-힣]+\d?[가-힣]*)\s*(\d+)\s*(?:[:：]|장)\s*(\d+)\s*절?\s*(?:[-~–]\s*(\d+)\s*절?)?/);
+  if(!m) return null;
+  const from = +m[3];
+  return { book:m[1], ch:+m[2], from, to:Math.min(Math.max(m[4] ? +m[4] : from, from), from + 40) };
+}
+/* "(1)…\n(2)…" → 절 단위 */
+function splitLyrics(v){
+  return String(v || "").replace(/\r/g, "").split(/\s*(?=\(\d+\))/).map(x => x.trim()).filter(Boolean).map(x => {
+    const m = x.match(/^\((\d+)\)\s*([\s\S]*)$/);
+    return { n:m ? m[1] : "", t:(m ? m[2] : x).replace(/\s+/g, " ").trim() };
+  }).filter(x => x.t);
+}
+async function fetchWord(p){
+  const out = { at:Date.now(), lyrics:[], verses:[], lOk:true, vOk:true };
+  const r = parseRef(p.bible), hn = (String(p.hymn || "").match(/\d{1,3}/) || [])[0];
+  const jobs = [];
+  if(r) jobs.push(gviz("성경 말씀", `select C, D, E where (A = '${r.book}' or B = '${r.book}') and C = ${r.ch} and D >= ${r.from} and D <= ${r.to} order by D`)
+    .then(t => { out.verses = t.rows.map(x => ({ n:cText(x.c && x.c[1]), t:cText(x.c && x.c[2]) })).filter(x => x.t); })
+    .catch(() => { out.vOk = false; }));
+  if(hn) jobs.push(gviz("찬송가 가사", `select A, B where A = ${hn}`)
+    .catch(() => gviz("찬송가 가사", `select A, B where A = '${hn}'`))       /* 번호 칸이 글자로 저장된 경우 */
+    .then(t => { out.lyrics = splitLyrics(cText(t.rows[0] && t.rows[0].c && t.rows[0].c[1])); })
+    .catch(() => { out.lOk = false; }));
+  await Promise.all(jobs);
+  return out;
+}
+/* 오늘 찬송·성경의 가사·본문을 미리 받아 둔다. 못 받으면 다음 갱신 때 다시 해 보고, 그동안은 번호만 보인다. */
+function ensureWord(){
+  if(state.demo) return;
+  const p = state.data.pray && state.data.pray[now().key];
+  if(!p || !(p.hymn || p.bible)) return;
+  const k = wordKey(p), have = words[k];
+  if(have && have.lOk && have.vOk) return;
+  if(wordBusy.has(k) || (have && Date.now() - have.at < 60e3)) return;
+  wordBusy.add(k);
+  fetchWord(p).then(w => {
+    words[k] = w;
+    for(const old of Object.keys(words).sort((a, b) => words[b].at - words[a].at).slice(12)) delete words[old];
+    store.set(WORD_KEY, words);
+    render();
+  }).catch(e => console.warn("word", e && e.message)).finally(() => wordBusy.delete(k));
+}
+
+/* ============ 날씨 ============ */
+/* WMO 날씨 코드 → [그림, 글자] */
+function wxKind(c){
+  if(c === 0) return ["sun", "맑음"];
+  if(c === 1) return ["sun", "대체로 맑음"];
+  if(c === 2) return ["partly", "구름 조금"];
+  if(c === 3) return ["cloud", "흐림"];
+  if(c === 45 || c === 48) return ["fog", "안개"];
+  if(c >= 51 && c <= 57) return ["rain", "이슬비"];
+  if(c >= 61 && c <= 67) return ["rain", "비"];
+  if((c >= 71 && c <= 77) || c === 85 || c === 86) return ["snow", "눈"];
+  if(c >= 80 && c <= 82) return ["rain", "소나기"];
+  if(c >= 95) return ["storm", "뇌우"];
+  return ["cloud", "흐림"];
+}
+const num = v => typeof v === "number" && Number.isFinite(v) ? v : null;
+function paintWeather(){
+  const w = state.wx, box = $("#wx");
+  const show = !!w && Date.now() - w.at < WEATHER.stale;
+  if(!changed("wx", show ? [w.t, w.code, w.hi, w.lo, w.pop] : null)) return;
+  box.hidden = !show;
+  if(!show) return;
+  const [icon, label] = wxKind(w.code);
+  $("#wxUse").setAttribute("href", "#wx-" + icon);
+  $("#wxNow").textContent = `${w.t}°`;
+  $("#wxCond").textContent = label;
+  $("#wxRange").textContent = w.hi != null && w.lo != null ? `${w.lo}° ~ ${w.hi}°` : "";
+  $("#wxPop").textContent = w.pop != null ? `강수 ${w.pop}%` : "";
+}
+let wxTimer = null;
+async function fetchWeather(){
+  clearTimeout(wxTimer);
+  const ctl = new AbortController(), kill = setTimeout(() => ctl.abort(), 10e3);
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER.lat}&longitude=${WEATHER.lon}`
+      + "&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+      + "&timezone=Asia%2FSeoul&forecast_days=1";
+    const r = await fetch(url, { signal:ctl.signal, cache:"no-store" });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json(), c = j.current || {}, d = j.daily || {};
+    const t = num(c.temperature_2m), code = num(c.weather_code != null ? c.weather_code : c.weathercode);
+    if(t == null || code == null) throw new Error("날씨 응답 모양이 다릅니다");
+    const rd = v => { const x = num(Array.isArray(v) ? v[0] : null); return x == null ? null : Math.round(x); };
+    state.wx = { t:Math.round(t), code, hi:rd(d.temperature_2m_max), lo:rd(d.temperature_2m_min), pop:rd(d.precipitation_probability_max), at:Date.now() };
+  }catch(e){ console.warn("weather", e && e.message); }        /* 날씨는 덤이다: 실패하면 조용히 넘어가고, 묵은 값은 paintWeather 가 숨긴다 */
+  finally{ clearTimeout(kill); try{ paintWeather(); }catch(e){ console.error(e); } wxTimer = setTimeout(fetchWeather, WEATHER.every); }
+}
+
+/* ============ 불러오기 ============ */
+let timer = null, fails = 0;
+async function refresh(){
+  clearTimeout(timer);
+  let bad = TABS.length;
+  try{
+    const res = await Promise.allSettled(TABS.map(t => gviz(t.sheet)));
+    bad = 0;
+    res.forEach((r, i) => {
+      const t = TABS[i], s = state.src[t.key];
+      try{
+        if(r.status !== "fulfilled") throw r.reason;
+        state.data[t.key] = PARSERS[t.key](r.value);
+        s.at = Date.now(); s.error = "";
+      }catch(e){ s.error = String((e && e.message) || e).slice(0, 60); bad++; }
+    });
+    state.tried = true;
+    if(bad < TABS.length){ state.loadedAt = Date.now(); saveCache(); }
+    fails = bad ? fails + 1 : 0;
+    render();
+    ensureWord();
+  }catch(e){ console.error("refresh", e); }
+  finally{ timer = setTimeout(refresh, bad ? RETRY_MS[Math.min(Math.max(fails, 1) - 1, RETRY_MS.length - 1)] : POLL_MS); }  /* 어떤 경우에도 다음 차례는 잡는다 */
+}
+
+/* 예시 자료 (?demo) — 시트 없이 화면을 미리 본다. 이름은 모두 지어낸 것이다. */
+function demoData(){
+  const n = now(), t = n.key, nx = nextWeekday(t);
+  const plan = { byDate:{}, dates:[] };
+  const put = (k, lines) => { plan.dates.push(k); plan.byDate[k] = lines.map(s => parseItem(s, k)); };
+  put(t, ["[교목부]목요예배", "[1학년부]안전교육(①,7)", "[교무부]교직원 협의회 (14:30)"]);
+  put(nx, [
+    "[연구부]수업 공개의 날(①②,3~4)", "[3학년부]진로 특강(③,6,7)", "[교무부]중간고사 감독 교사 연수(7)",
+    "[기획위원]부장회의(6,7)", "[2학년부]<자율>학급 활동(②,6-7)", "[2학년부]<자율>학급 활동(③,7)", "[상담부]집단상담(②, ~13일)"
+  ]);
+  const pray = {}, night = {};
+  const names = ["김하나", "이두리", "박세나", "최네리", "정다솜"];
+  const dow = dowOf(t), mon = dow === 0 ? addDays(t, 1) : dow === 6 ? addDays(t, 2) : addDays(t, 1 - dow);
+  names.forEach((nm, i) => { pray[addDays(mon, i)] = { name:nm, bible:"", hymn:"" }; });
+  pray[t] = { name:(pray[t] && pray[t].name) || "김하나", bible:"요한복음 8:12", hymn:"430" };
+  night[t] = "홍길동"; night[nx] = "성춘향";
+  const mk = (g, arr) => ({ g, classes:arr.map((c, i) => ({ c:i + 1, n:c })), total:arr.reduce((a, b) => a + b, 0) });
+  const grades = [mk(1, [19, 20, 20, 20, 19]), mk(2, [19, 19, 20, 19, 19]), mk(3, [22, 20, 20, 20, 20, 18])];
+  return {
+    plan, pray, night,
+    notice:[{ from:t, to:t, text:"이 화면은 예시입니다. 실제 공지는 구글 시트의 ‘공지사항’ 탭에서 불러옵니다." }],
+    roster:{ grades, total:grades.reduce((a, g) => a + g.total, 0) }
+  };
+}
+
+/* ============ 시작 ============ */
+const wake = (() => {
+  let t; return () => { document.body.classList.remove("idle"); clearTimeout(t); t = setTimeout(() => document.body.classList.add("idle"), 3000); };
+})();
+async function keepAwake(){ try{ if("wakeLock" in navigator && document.visibilityState === "visible") await navigator.wakeLock.request("screen"); }catch{} }
+
+addEventListener("resize", layout);
+addEventListener("mousemove", wake);
+const toggleFullscreen = () => {
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+};
+addEventListener("dblclick", toggleFullscreen);
+addEventListener("keydown", e => { if(e.key === "f" || e.key === "F") toggleFullscreen(); });
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible") return;
+  keepAwake();
+  if(!state.demo && Date.now() - state.loadedAt > 2 * 60e3) refresh();
+  if(!state.demo && WEATHER.on && (!state.wx || Date.now() - state.wx.at > WEATHER.every)) fetchWeather();
+});
+if(document.fonts){
+  document.fonts.addEventListener("loadingdone", () => fitAll());
+  document.fonts.ready.then(() => fitAll());
+}
+setInterval(() => {
+  const t = Date.now();
+  for(const [l, p] of pagers) if(p.pages.length > 1 && t - p.t >= p.every - 50){ p.t = t; p.i = (p.i + 1) % p.pages.length; showPage(l, p); }
+}, 1000);
+
+wake(); keepAwake();
+for(const c of document.querySelectorAll(".card")) c.dataset.pager = "";
+$("#notices").dataset.pager = "";
+layout();
+tick();
+if(Q.has("demo")){
+  state.demo = true;
+  state.data = demoData();
+  state.wx = { t:18, code:2, hi:22, lo:11, pop:20, at:Date.now() };
+  words["430|요한복음 8:12"] = {
+    at:Date.now(), lOk:true, vOk:true,
+    lyrics:[1, 2, 3].map(i => ({ n:String(i), t:`예시 가사 ${i}절입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 가사이며 실제 가사는 시트의 찬송가 가사 탭에서 불러옵니다.` })),
+    verses:[{ n:"12", t:"예시 본문입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 문장이며 실제 본문은 시트의 성경 말씀 탭에서 불러옵니다." }]
+  };
+  render();
+}else{
+  loadCache();
+  render();
+  refresh();
+  if(WEATHER.on) fetchWeather();
+}
+</script>
+</body>
+</html>
