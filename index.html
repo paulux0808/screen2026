@@ -15,7 +15,7 @@
   --bg:#050912;
   --ink:#f7f9ff; --ink-2:#c9d1ea; --ink-3:#8f9bbd;
   --line:rgba(255,255,255,.11);
-  --today:#ffcf4d; --next:#62d4ff; --notice:#ff8a78; --pray:#cdb4ff; --stu:#ffb7d8; --ok:#46d58d;
+  --today:#ffcf4d; --next:#62d4ff; --meal:#7fe3b0; --notice:#ff8a78; --pray:#cdb4ff; --stu:#ffb7d8; --ok:#46d58d;
   --sans:"Pretendard Variable",Pretendard,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","Nanum Gothic",system-ui,sans-serif;
   color-scheme:dark;
 }
@@ -64,8 +64,10 @@ body.idle,body.idle *{cursor:none!important}
 }
 .card::before{content:"";position:absolute;left:0;right:0;top:0;height:9px;background:var(--acc)}
 .card.today{box-shadow:0 0 0 2px rgba(255,207,77,.5),0 24px 70px -28px rgba(255,207,77,.45)}
-.card.next{--acc:var(--next)}
-.card-h{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 18px;padding-bottom:12px;border-bottom:1.5px solid rgba(255,255,255,.12)}
+.card.next{--acc:var(--next);box-shadow:0 0 0 2px rgba(98,212,255,.28),0 24px 70px -30px rgba(98,212,255,.35);transition:box-shadow .6s ease}
+.card.next[data-phase="lunch"],.card.next[data-phase="dinner"]{box-shadow:0 0 0 2px rgba(127,227,176,.38),0 24px 70px -30px rgba(127,227,176,.4)}
+.card::before{transition:background .6s ease}
+.card-h{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 18px;min-height:82px;padding-bottom:10px;margin-bottom:4px;border-bottom:1.5px solid rgba(255,255,255,.12)}
 .dl{display:flex;align-items:baseline;gap:16px;min-width:0}
 .dl b{font-size:58px;font-weight:900;color:var(--acc);white-space:nowrap}
 .dl span{font-size:40px;font-weight:700;color:var(--ink-2);white-space:nowrap}
@@ -102,6 +104,23 @@ body.idle,body.idle *{cursor:none!important}
 .tg.cat{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:var(--ink-3)}
 .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;text-align:center;font-size:.8em;font-weight:600;color:var(--ink-3);border:0!important}
 
+/* ── 내일 카드: 내일 일정 → 중식 → 석식 이 15초마다 돈다 ── */
+.panes{flex:1 1 0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr)}
+.panes > .pane{grid-area:1 / 1;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility 0s .6s}
+.panes > .pane.on{opacity:1;visibility:visible;transition:opacity .6s ease}
+.card .hd-meal{display:none}
+.card.next[data-phase="lunch"],.card.next[data-phase="dinner"]{--acc:var(--meal)}
+.card.next:not([data-phase="next"]) .hd-day{display:none!important}
+.card.next:not([data-phase="next"]) .hd-meal{display:flex}
+.kcal{font-size:32px;font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.rot{display:flex;gap:10px;align-items:center}
+.rot i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.22)}
+.rot i.on{background:var(--acc);box-shadow:0 0 12px var(--acc)}
+.list.meal{display:grid;grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:1.2em;align-content:start}
+.dish{position:relative;padding:.14em 0 .14em .9em;font-weight:700;line-height:1.24;border-bottom:1px solid rgba(255,255,255,.07);word-break:keep-all;overflow-wrap:anywhere}
+.dish:last-child{border-bottom:0}
+.dish::before{content:"";position:absolute;left:.1em;top:.6em;width:.34em;height:.34em;border-radius:50%;background:var(--meal)}
+
 /* ── 공지사항 (있을 때만 나타난다) ─────────────────── */
 .notices{
   flex:none;display:flex;align-items:center;gap:28px;padding:14px 30px;border-radius:30px;
@@ -119,8 +138,10 @@ body.idle,body.idle *{cursor:none!important}
 .box{
   --c:var(--ink-2);
   display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0;overflow:hidden;
-  border-radius:28px;padding:12px 26px 14px;background:rgba(255,255,255,.05);border:1.5px solid var(--line);
+  position:relative;border-radius:28px;padding:14px 26px 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));border:1.5px solid var(--line);
 }
+.box::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--c);opacity:.85}
 .box h3{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:28px;font-weight:800;letter-spacing:.05em;color:var(--c);line-height:1.1}
 .box h3 b{font-size:38px;font-weight:900;letter-spacing:0;color:#fff;line-height:1}
 .dv .kv{display:flex;align-items:baseline;gap:.42em;min-width:0;white-space:nowrap;font-size:58px;font-weight:800;line-height:1.18}
@@ -179,6 +200,10 @@ body.idle,body.idle *{cursor:none!important}
 .dot.warn{background:#ffc04d;box-shadow:0 0 12px #ffc04d}
 .dot.err{background:#ff6b6b;box-shadow:0 0 12px #ff6b6b}
 .status .sp{flex:1}
+#schoolCode{padding:1px 14px;border:1.5px solid var(--line);border-radius:999px;font-size:.9em;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+#schoolCode:empty{display:none}
+.status .cr{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#stage.portrait .status .cr{display:none}
 .overlay{
   position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:80px;text-align:center;
   background:rgba(5,9,18,.94);
@@ -308,12 +333,21 @@ body.idle,body.idle *{cursor:none!important}
       </div>
       <ul class="list" id="list-today"></ul>
     </section>
-    <section class="card next" id="card-next">
+    <section class="card next" id="card-next" data-phase="next">
       <div class="card-h">
-        <div class="dl"><b data-r="label">내일</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
-        <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+        <div class="dl hd-day"><b data-r="label">내일</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
+        <div class="dl hd-meal"><b id="mealLabel">중식</b><span id="mealSub"></span></div>
+        <div class="hd-r">
+          <div class="night hd-day" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg hd-day" data-r="pg"></span>
+          <span class="kcal hd-meal" id="mealKcal"></span>
+          <span class="rot" id="rot"></span>
+        </div>
       </div>
-      <ul class="list" id="list-next"></ul>
+      <div class="panes">
+        <ul class="list pane on" id="list-next"></ul>
+        <ul class="list pane meal" id="list-lunch" data-pager></ul>
+        <ul class="list pane meal" id="list-dinner" data-pager></ul>
+      </div>
     </section>
   </main>
 
@@ -341,7 +375,8 @@ body.idle,body.idle *{cursor:none!important}
   <footer class="status">
     <span class="dot" id="dot"></span><span id="stxt">불러오는 중…</span>
     <span class="sp"></span>
-    <span>날씨 Open-Meteo · 더블클릭: 전체 화면</span>
+    <span id="schoolCode"></span>
+    <span class="cr">날씨 Open-Meteo · 급식 나이스 · 더블클릭: 전체 화면</span>
   </footer>
 
   <div class="overlay" id="overlay"><b>자료를 불러오는 중…</b></div>
@@ -356,6 +391,7 @@ body.idle,body.idle *{cursor:none!important}
   주소 끝에 붙이는 미리보기 도구:
     ?demo               시트 없이 예시 자료로 본다
     ?date=2026-10-01    그날인 것처럼 본다      ?time=07:56   시각을 고정한다
+    급식: 나이스 Open API (중식·석식). 받지 못하면 내일 카드는 일정만 보인다.
     ?time=07:52         아침 예배 화면(찬송·성경)을 미리 본다.  ?worship  시간과 상관없이 그 화면을 본다
 */
 
@@ -373,6 +409,9 @@ const TZ = "Asia/Seoul";
 /* 아침 예배: 이 시간에만 찬송·성경을 화면 가득 보여 준다. 분 단위이고 끝 분까지 포함한다(07:55 는 07:55:59 까지). 요일은 0=일 … 6=토 */
 const WORSHIP = { from:"07:50", to:"07:55", days:[1, 2, 3, 4, 5] };
 const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 * 3600e3 };
+/* 급식: 나이스(NEIS) 교육정보 개방 포털. 인증키 없이 소량 조회한다. code 는 학교알리미 학교코드(화면 구석에 표시). */
+const SCHOOL = { name:"보성여자고등학교", office:"B10", code:"B100000447" };
+const MEAL = { on:true, every:60 * 60e3, rotate:15e3 };     /* 한 시간마다 새로 받고, 내일 카드는 15초마다 넘긴다 */
 const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
 const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
 const CACHE_KEY = "board:cache:v1";
@@ -952,6 +991,8 @@ function fitAll(){
   const stage = $("#stage"), cp = stage.classList.contains("compact");
   fitLists([$("#list-notice")], 56, 38);          /* 공지가 차지하는 높이가 정해져야 카드 높이도 정해진다 */
   fitLists([$("#list-today"), $("#list-next")], 66, 38);   /* 오늘·내일은 글자 크기가 같다 */
+  fitLists([$("#list-lunch")], 66, 38);          /* 식단은 칸마다 따로 */
+  fitLists([$("#list-dinner")], 66, 38);
   fitWidthAll([...document.querySelectorAll("#week .n")], cp ? 40 : 52, 22, .92);
   fitWidthAll([...document.querySelectorAll("#box-dv .kv b")], cp ? 44 : 58, 26);
   if(stage.classList.contains("worship-on")){
@@ -1012,6 +1053,7 @@ function render(){
   dirty = paintDevotion(v.pray) || dirty;
   dirty = paintWeek(v.week, v.weekTitle) || dirty;
   dirty = paintRoster(v.roster) || dirty;
+  dirty = paintMeal(state.meal) || dirty;
   paintStatus();
   paintWeather();
   if(dirty) fitAll();
@@ -1044,7 +1086,7 @@ function tickBody(){
   wd.textContent = `${WD[dowOf(n.key)]}요일`;
   wd.className = "wd" + (dowOf(n.key) === 6 ? " sat" : dowOf(n.key) === 0 ? " sun" : "");
   const wOn = worshipNow(n);
-  if(n.key !== dayKey || wOn !== lastWorship){ if(n.key !== dayKey) ensureWord(); dayKey = n.key; lastWorship = wOn; render(); }
+  if(n.key !== dayKey || wOn !== lastWorship){ if(n.key !== dayKey){ ensureWord(); if(dayKey && !state.demo) fetchMeal(); } dayKey = n.key; lastWorship = wOn; render(); }
   else if(n.ss === 0) paintStatus();
   if(n.hh === 3 && n.mm === 30 && performance.now() > 6 * 3600e3 && !FAKE.date && !FAKE.time) nightlyReload();
 }
@@ -1161,6 +1203,120 @@ async function fetchWeather(){
   finally{ clearTimeout(kill); try{ paintWeather(); }catch(e){ console.error(e); } wxTimer = setTimeout(fetchWeather, WEATHER.every); }
 }
 
+/* ============ 급식 (나이스) ============ */
+/* 오늘 중식·석식. 오늘 급식이 없으면(주말·방학) 다음 급식일 것을 보인다. 실패하면 조용히 넘어가고 내일 카드는 일정만 돈다. */
+const SCHOOL_KEY = "board:school:v1", MEAL_KEY = "board:meal:v1";
+const NEIS = "https://open.neis.go.kr/hub/";
+async function neis(service, params){
+  const ctl = new AbortController(), kill = setTimeout(() => ctl.abort(), 12e3);
+  try{
+    const q = new URLSearchParams({ Type:"json", pIndex:"1", pSize:"5", ATPT_OFCDC_SC_CODE:SCHOOL.office, ...params });
+    const r = await fetch(NEIS + service + "?" + q, { signal:ctl.signal, cache:"no-store" });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const body = j[service];
+    if(!body){                                                     /* 자료 없음은 { RESULT:{ CODE:"INFO-200" } } 로 온다 */
+      const code = j.RESULT && j.RESULT.CODE;
+      if(code === "INFO-200") return [];
+      throw new Error(code || "응답 모양이 다릅니다");
+    }
+    return (body.find(x => x.row) || {}).row || [];
+  }finally{ clearTimeout(kill); }
+}
+const ymdOf = k => k.replace(/-/g, "");
+const keyOfYmd = y => `${y.slice(0, 4)}-${y.slice(4, 6)}-${y.slice(6, 8)}`;
+/* "현미밥(5.)<br/>쇠고기미역국 (5.6.16.)" → ["현미밥", "쇠고기미역국"] */
+function dishes(v){
+  return String(v || "").split(/<br\s*\/?>|\n/i).map(x => x
+    .replace(/\(\s*[\d.,\s]+\)/g, "")          /* 알레르기 번호 */
+    .replace(/(\D)[\d.]+\s*$/, "$1")             /* 괄호 없이 붙은 번호 */
+    .replace(/[*#]+/g, "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+async function schoolCode(){
+  const c = store.get(SCHOOL_KEY);
+  if(c && c.name === SCHOOL.name && c.office === SCHOOL.office && c.sd) return c.sd;
+  const rows = await neis("schoolInfo", { SCHUL_NM:SCHOOL.name });
+  const row = rows.find(r => r.SCHUL_NM === SCHOOL.name) || rows[0];
+  if(!row || !row.SD_SCHUL_CODE) throw new Error("학교를 찾지 못했습니다");
+  store.set(SCHOOL_KEY, { name:SCHOOL.name, office:SCHOOL.office, sd:row.SD_SCHUL_CODE });
+  return row.SD_SCHUL_CODE;
+}
+let mealTimer = null;
+async function fetchMeal(){
+  clearTimeout(mealTimer);
+  try{
+    const sd = await schoolCode(), t = now().key;
+    let rows = await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_YMD:ymdOf(t) });
+    if(!rows.length) rows = await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_FROM_YMD:ymdOf(addDays(t, 1)), MLSV_TO_YMD:ymdOf(addDays(t, 14)) });
+    const day = rows.map(r => String(r.MLSV_YMD || "")).filter(y => /^\d{8}$/.test(y)).sort()[0];
+    const pick = name => {
+      const r = rows.find(x => x.MLSV_YMD === day && String(x.MMEAL_SC_NM || "").includes(name));
+      if(!r) return null;
+      const d = dishes(r.DDISH_NM);
+      const kcal = (String(r.CAL_INFO || "").match(/[\d.]+/) || [])[0];
+      return d.length ? { dishes:d, kcal:kcal ? Math.round(+kcal) : null } : null;
+    };
+    state.meal = day ? { date:keyOfYmd(day), lunch:pick("중식"), dinner:pick("석식"), at:Date.now() } : { date:t, lunch:null, dinner:null, at:Date.now() };
+    store.set(MEAL_KEY, state.meal);
+  }catch(e){ console.warn("meal", e && e.message); }
+  finally{ try{ render(); }catch(e){ console.error(e); } mealTimer = setTimeout(fetchMeal, MEAL.every); }
+}
+/* 지난 날짜의 저장본은 쓰지 않는다 */
+const mealFor = m => m && m.date >= now().key ? m : null;
+function paintMeal(raw){
+  const m = mealFor(raw);
+  if(!changed("meal", m)) return false;
+  for(const [slot, id] of [["lunch", "#list-lunch"], ["dinner", "#list-dinner"]]){
+    const ul = $(id), x = m && m[slot];
+    ul.replaceChildren(...(x ? x.dishes.map(d => el("li", "dish", d)) : []));
+    ul.style.gridTemplateRows = x ? `repeat(${Math.ceil(x.dishes.length / 2)},auto)` : "";   /* 두 줄로, 위에서 아래로 읽는다 */
+  }
+  rotSync();
+  return true;
+}
+
+/* ── 내일 카드 돌리기: 내일 일정 → 중식 → 석식 ── */
+const rot = { phases:["next"], i:0, t:Date.now() };
+function rotSync(){
+  const m = mealFor(state.meal);
+  const ph = ["next"];
+  if(m && m.lunch) ph.push("lunch");
+  if(m && m.dinner) ph.push("dinner");
+  const cur = rot.phases[rot.i];
+  rot.phases = ph;
+  rot.i = Math.max(0, ph.indexOf(cur));
+  $("#rot").replaceChildren(...(ph.length > 1 ? ph.map(() => el("i", "")) : []));
+  setPhase(rot.phases[rot.i]);
+}
+function setPhase(ph){
+  const card = $("#card-next");
+  card.dataset.phase = ph;
+  $("#list-next").classList.toggle("on", ph === "next");
+  $("#list-lunch").classList.toggle("on", ph === "lunch");
+  $("#list-dinner").classList.toggle("on", ph === "dinner");
+  [...$("#rot").children].forEach((d, i) => d.classList.toggle("on", i === rot.i));
+  if(ph === "next"){
+    const p = pagers.get($("#list-next"));        /* 일정으로 돌아오면 첫 쪽부터 */
+    if(p && p.i){ p.i = 0; p.t = Date.now(); showPage($("#list-next"), p); }
+    return;
+  }
+  const m = mealFor(state.meal), x = m && m[ph];
+  const t = now().key;
+  $("#mealLabel").textContent = ph === "lunch" ? "중식" : "석식";
+  $("#mealSub").textContent = !m ? "" : m.date === t ? "오늘 급식" : m.date === addDays(t, 1) ? "내일 급식" : `${WD[dowOf(m.date)]}요일 ${mdOf(m.date)} 급식`;
+  $("#mealKcal").textContent = x && x.kcal ? `${x.kcal} kcal` : "";
+}
+function rotTick(){
+  if(rot.phases.length < 2) return;
+  const ph = rot.phases[rot.i];
+  const p = ph === "next" && pagers.get($("#list-next"));
+  const dwell = p ? Math.max(MEAL.rotate, p.pages.length * p.every) : MEAL.rotate;   /* 일정이 여러 쪽이면 다 보일 때까지 */
+  if(Date.now() - rot.t < dwell - 50) return;
+  rot.t = Date.now();
+  rot.i = (rot.i + 1) % rot.phases.length;
+  setPhase(rot.phases[rot.i]);
+}
+
 /* ============ 불러오기 ============ */
 let timer = null, fails = 0;
 async function refresh(){
@@ -1238,9 +1394,11 @@ if(document.fonts){
 setInterval(() => {
   const t = Date.now();
   for(const [l, p] of pagers) if(p.pages.length > 1 && t - p.t >= p.every - 50){ p.t = t; p.i = (p.i + 1) % p.pages.length; showPage(l, p); }
+  try{ rotTick(); }catch(e){ console.error("rot", e); }
 }, 1000);
 
 wake(); keepAwake();
+$("#schoolCode").textContent = SCHOOL.code ? `학교코드 ${SCHOOL.code}` : "";
 for(const c of document.querySelectorAll(".card")) c.dataset.pager = "";
 $("#notices").dataset.pager = "";
 layout();
@@ -1254,12 +1412,17 @@ if(Q.has("demo")){
     lyrics:[1, 2, 3].map(i => ({ n:String(i), t:`예시 가사 ${i}절입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 가사이며 실제 가사는 시트의 찬송가 가사 탭에서 불러옵니다.` })),
     verses:[{ n:"12", t:"예시 본문입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 문장이며 실제 본문은 시트의 성경 말씀 탭에서 불러옵니다." }]
   };
+  state.meal = { date:state.data.plan.dates[0], at:Date.now(),
+    lunch:{ dishes:["현미밥", "쇠고기미역국", "닭갈비", "도토리묵무침", "배추김치", "요구르트"], kcal:812 },
+    dinner:{ dishes:["카레라이스", "유부장국", "돈가스", "양배추샐러드", "깍두기"], kcal:905 } };
   render();
 }else{
   loadCache();
+  state.meal = store.get(MEAL_KEY) || null;
   render();
   refresh();
   if(WEATHER.on) fetchWeather();
+  if(MEAL.on) fetchMeal();
 }
 </script>
 </body>
