@@ -104,7 +104,7 @@ body.idle,body.idle *{cursor:none!important}
 .tg.cat{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:var(--ink-3)}
 .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;text-align:center;font-size:.8em;font-weight:600;color:var(--ink-3);border:0!important}
 
-/* ── 내일 카드: 내일 일정 → 중식 → 석식 이 15초마다 돈다 ── */
+/* ── 내일 카드: 내일 일정(10초) → 중식(5초) → 석식(10초) 순으로 돈다 ── */
 .panes{flex:1 1 0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr)}
 .panes > .pane{grid-area:1 / 1;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility 0s .6s}
 .panes > .pane.on{opacity:1;visibility:visible;transition:opacity .6s ease}
@@ -396,7 +396,8 @@ body.idle,body.idle *{cursor:none!important}
 */
 
 /* ============ 설정 ============ */
-const SHEET_ID = "10blDNZ4zjrFU5lwCvgtoD3npwIwcCMQTeqwPgpQ_Ffg";
+/* 시트(또는 시트 소유 계정)가 바뀌면 이 ID 만 고치면 된다. 탭은 이름으로 읽으므로 탭 이름도 같아야 한다. */
+const SHEET_ID = "1qg5vX4KlrI3hwn1XLiLIupkO74zxleqV6Imk1y5YQIE";
 const TABS = [
   { key:"plan",   sheet:"연중행사계획", name:"학사일정" },
   { key:"notice", sheet:"공지사항",     name:"공지사항" },
@@ -411,7 +412,7 @@ const WORSHIP = { from:"07:50", to:"07:55", days:[1, 2, 3, 4, 5] };
 const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 * 3600e3 };
 /* 급식: 나이스(NEIS) 교육정보 개방 포털. 인증키 없이 소량 조회한다. code 는 학교알리미 학교코드(화면 구석에 표시). */
 const SCHOOL = { name:"보성여자고등학교", office:"B10", code:"B100000447" };
-const MEAL = { on:true, every:60 * 60e3, rotate:15e3 };     /* 한 시간마다 새로 받고, 내일 카드는 15초마다 넘긴다 */
+const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3 };     /* 한 시간마다 새로 받고, 내일 카드는 중식 5초·나머지(일정·석식) 10초씩 넘긴다 */
 const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
 const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
 const CACHE_KEY = "board:cache:v1";
@@ -721,11 +722,11 @@ for(const t of TABS) state.src[t.key] = { at:0, error:"" };
 function saveCache(){
   const tabs = {};
   for(const t of TABS) if(state.data[t.key]) tabs[t.key] = { at:state.src[t.key].at, data:state.data[t.key] };
-  store.set(CACHE_KEY, { v:1, tabs });
+  store.set(CACHE_KEY, { v:1, sheet:SHEET_ID, tabs });
 }
 function loadCache(){
   const c = store.get(CACHE_KEY);
-  if(!c || c.v !== 1 || !c.tabs) return;
+  if(!c || c.v !== 1 || !c.tabs || c.sheet !== SHEET_ID) return;   /* 다른 시트(옛 시트 포함)에서 받은 저장본은 쓰지 않는다 */
   for(const t of TABS){
     const x = c.tabs[t.key];
     if(x && x.data){ state.data[t.key] = x.data; state.src[t.key].at = x.at || 0; state.loadedAt = Math.max(state.loadedAt, x.at || 0); }
@@ -937,7 +938,7 @@ function bestSize(listEl, max, min){
   return lo;
 }
 /* 정한 크기로 칸을 채우고, min 에서도 넘치면 쪽으로 나눠 돌려 보인다 */
-function applyFit(listEl, fs){
+function applyFit(listEl, fs, noPage){
   pagers.delete(listEl);
   const items = [...listEl.children];
   for(const li of items) li.hidden = false;
@@ -948,6 +949,7 @@ function applyFit(listEl, fs){
   if(listEl.clientHeight < 40) return;
   listEl.style.setProperty("--fs", fs + "px");
   if(listEl.scrollHeight <= listEl.clientHeight + 1) return;
+  if(noPage) return;                       /* 쪽으로 나누지 않고 작게라도 한 화면에 */
   if(items.length < 2 || items[0].classList.contains("empty")) return;
   const pages = [[]]; let used = 0;
   const H = listEl.clientHeight;
@@ -961,10 +963,10 @@ function applyFit(listEl, fs){
   showPage(listEl, p);
 }
 /* 여러 칸이 같은 글자 크기를 쓰게 한다: 가장 빡빡한 칸에 맞춘다 */
-function fitLists(lists, max, min){
+function fitLists(lists, max, min, noPage){
   const sizes = lists.map(l => bestSize(l, max, min)).filter(v => v != null);
   const fs = sizes.length ? Math.min(...sizes) : max;
-  for(const l of lists) applyFit(l, fs);
+  for(const l of lists) applyFit(l, fs, noPage);
 }
 function showPage(listEl, p){
   p.pages.forEach((arr, i) => arr.forEach(li => { li.hidden = i !== p.i; }));
@@ -999,7 +1001,7 @@ function fitAll(){
     const hText = $("#w-hymn").classList.contains("has-text"), bText = $("#w-bible").classList.contains("has-text");
     fitWidth($("#w-hymn b"), hText ? (cp ? 90 : 120) : (cp ? 300 : 340), 60);       /* 머리(번호)를 먼저 맞춰야 글이 들어갈 높이가 정해진다 */
     fitWidth($("#w-bible b"), bText ? (cp ? 76 : 100) : (cp ? 170 : 200), 44);
-    fitLists([$("#w-hymn-text")], cp ? 52 : 62, cp ? 36 : 40);                 /* 가사·본문은 각자 가장 큰 글자로 */
+    fitLists([$("#w-hymn-text")], cp ? 52 : 62, 16, true);                 /* 가사·본문은 각자 가장 큰 글자로 */
     fitLists([$("#w-bible-text")], cp ? 52 : 62, cp ? 36 : 40);
   }
 }
@@ -1107,7 +1109,8 @@ function layout(){
 /* ============ 찬송 가사 · 성경 본문 (아침 예배 화면에서 쓴다) ============ */
 /* 같은 시트의 '찬송가 가사', '성경 말씀' 탭을 이름으로 찾아 조회한다(모바일 앱과 같은 방식). 번호만 평소 화면에 둔다. */
 const WORD_KEY = "board:word:v1";
-const words = store.get(WORD_KEY) || {};            /* "찬송|성경" → { at, lyrics:[{n,t}], verses:[{n,t}], lOk, vOk } */
+const wordSaved = store.get(WORD_KEY);
+const words = (wordSaved && wordSaved.sheet === SHEET_ID && wordSaved.words) || {};   /* 다른 시트에서 받은 저장본은 버린다 */            /* "찬송|성경" → { at, lyrics:[{n,t}], verses:[{n,t}], lOk, vOk } */
 const wordBusy = new Set();
 const wordKey = p => `${p.hymn || ""}|${p.bible || ""}`;
 /* "요한복음 8:12", "시 23:1-6" → 책·장·절 범위. 못 읽으면 null (그땐 번호만 보인다) */
@@ -1150,7 +1153,7 @@ function ensureWord(){
   fetchWord(p).then(w => {
     words[k] = w;
     for(const old of Object.keys(words).sort((a, b) => words[b].at - words[a].at).slice(12)) delete words[old];
-    store.set(WORD_KEY, words);
+    store.set(WORD_KEY, { sheet:SHEET_ID, words });
     render();
   }).catch(e => console.warn("word", e && e.message)).finally(() => wordBusy.delete(k));
 }
@@ -1310,7 +1313,7 @@ function rotTick(){
   if(rot.phases.length < 2) return;
   const ph = rot.phases[rot.i];
   const p = ph === "next" && pagers.get($("#list-next"));
-  const dwell = p ? Math.max(MEAL.rotate, p.pages.length * p.every) : MEAL.rotate;   /* 일정이 여러 쪽이면 다 보일 때까지 */
+  const dwell = p ? Math.max(MEAL.rotate, p.pages.length * p.every) : ph === "lunch" ? MEAL.lunch : MEAL.rotate;   /* 일정이 여러 쪽이면 다 보일 때까지 */
   if(Date.now() - rot.t < dwell - 50) return;
   rot.t = Date.now();
   rot.i = (rot.i + 1) % rot.phases.length;
