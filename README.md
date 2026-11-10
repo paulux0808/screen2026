@@ -7,3 +7,7 @@
 - **탭 이름**: gid 가 아니라 **이름**으로 읽는다. `TABS` 의 `연중행사계획`·`공지사항`·`기도순서`·`자습감독`·`학생현황`, 그리고 `fetchWord()` 의 `성경 말씀`·`찬송가 가사` 가 시트의 탭 이름(띄어쓰기 포함)과 같아야 한다.
 - **Apps Script 주소**: 이 저장소는 Apps Script 웹앱을 쓰지 않는다(해당 없음).
 - 브라우저 저장본(`board:cache:v1`, `board:word:v1`)에는 받아 온 시트 ID 가 같이 저장되며, 현재 `SHEET_ID` 와 다르면 쓰지 않는다.
+
+## 새 화면 시안 (`prototype.html`)
+- `index.html` 과 같은 시트·같은 방식으로 자료를 읽고 화면 구성만 새로 짠 시안. `prototype.html?demo` 로 열면 예시 자료로 본다.
+- 일과 시각표는 `BELLS`, 급식을 내리는 시각은 `MEAL.lunchEnd`·`dinnerEnd` 에서 고친다.

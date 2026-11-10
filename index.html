@@ -416,7 +416,7 @@ const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 *
 const SCHOOL = { name:"보성여자고등학교", office:"B10", code:"B100000447" };
 /* 한 시간마다 새로 받고, 내일 카드는 중식 5초·나머지(일정·석식) 10초씩 넘긴다.
    lunchEnd 가 지나면 오늘 중식을, dinnerEnd 가 지나면 오늘 석식을 내리고 다음 급식일 것을 보인다. */
-const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3, lunchEnd:"13:30", dinnerEnd:"19:00" };
+const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3, lunchEnd:"12:00", dinnerEnd:"19:00" };
 const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
 const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
 const CACHE_KEY = "board:cache:v1";
