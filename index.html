@@ -35,7 +35,7 @@ body.idle,body.idle *{cursor:none!important}
 }
 
 /* ── 머리: 시계 · 날짜 ─────────────────────────────── */
-.top{flex:none;display:flex;align-items:center;justify-content:space-between;height:126px}
+.top{flex:none;display:flex;align-items:center;gap:30px;height:126px}
 .when{display:flex;align-items:center;gap:34px}
 .clock{font-size:132px;font-weight:800;line-height:1;letter-spacing:-.025em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 44px rgba(120,160,255,.35)}
 .clock .c{display:inline-block;margin:0 .03em;transform:translateY(-.06em);animation:blink 1s steps(1,end) infinite}
@@ -44,8 +44,8 @@ body.idle,body.idle *{cursor:none!important}
 .date .md{font-size:62px;font-weight:800}
 .date .wd{font-size:44px;font-weight:700;color:var(--ink-2)}
 .date .wd.sat{color:var(--next)} .date .wd.sun{color:var(--notice)}
-.brand{display:flex;align-items:center;gap:16px;font-size:38px;font-weight:800;color:var(--ink-2)}
-.brand svg{width:54px;height:54px;flex:none}
+.brand{display:flex;align-items:center;gap:14px;margin-left:auto;font-size:32px;font-weight:800;color:var(--ink-3);white-space:nowrap}   /* 이름은 오른쪽으로 밀고, 날씨가 있으면 그 옆에 선다 */
+.brand svg{width:44px;height:44px;flex:none}
 .wx{display:flex;align-items:center;gap:18px;padding:8px 28px 8px 20px;border-radius:28px;background:rgba(255,255,255,.055);border:1.5px solid var(--line)}
 .wxi{width:78px;height:78px;flex:none}
 .wx .now{font-size:72px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -156,7 +156,8 @@ body.idle,body.idle *{cursor:none!important}
 .wk.now{background:var(--today);box-shadow:0 0 28px rgba(255,207,77,.35)}
 .wk.now .d{color:#6d4e00} .wk.now .n{color:#241800}
 .wk .n.nil{color:var(--ink-3);font-weight:600}
-.gr{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;gap:0 16px;line-height:1.04}
+#stuRows{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:baseline;gap:0 16px;line-height:1.04}   /* 세 줄이 한 표라 숫자 칸이 줄마다 어긋나지 않는다 */
+.gr{display:contents}
 .gr span{font-size:29px;font-weight:700;color:var(--ink-3)}
 .gr b{font-size:42px;font-weight:800;min-width:1.8em;text-align:right;font-variant-numeric:tabular-nums}
 .gr em{font-style:normal;font-size:27px;font-weight:600;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
@@ -189,7 +190,7 @@ body.idle,body.idle *{cursor:none!important}
 .wcol.has-text .pg{display:block;font-size:34px;font-weight:800;color:var(--pray)}
 .wcol.has-text .wtext{display:block;grid-column:1 / -1;align-self:stretch;margin-top:10px;padding:14px 0 0;border-top:2px solid rgba(255,255,255,.14);font-size:var(--fs,48px);line-height:1.34}
 .wtext .vs{padding:.12em 0;font-weight:600;color:#f3f5ff;word-break:keep-all;overflow-wrap:anywhere}
-.wtext .vs.n{padding-left:1.8em;text-indent:-1.8em}
+.wtext .vs.n{padding-left:1.08em;text-indent:-1.08em}     /* 번호 칸(글자 0.6배 × 1.8em)만큼: 둘째 줄이 첫 줄 글자와 나란하다 */
 .wtext .vn{display:inline-block;width:1.5em;margin-right:.3em;text-indent:0;font-size:.6em;font-weight:900;color:var(--pray);vertical-align:.22em}
 #stage.worship-on .days,#stage.worship-on .notices,#stage.worship-on .info{display:none}
 #stage.worship-on .worship{display:flex}
@@ -222,8 +223,8 @@ body.idle,body.idle *{cursor:none!important}
 #stage.compact .wxi{width:58px;height:58px}
 #stage.compact .wx .now{font-size:54px}
 #stage.compact .wx .sub{font-size:22px}
-#stage.compact .brand{font-size:32px}
-#stage.compact .brand svg{width:44px;height:44px}
+#stage.compact .brand{font-size:27px}
+#stage.compact .brand svg{width:36px;height:36px}
 #stage.compact .card{padding:14px 26px 8px;border-radius:26px}
 #stage.compact .dl b{font-size:48px}
 #stage.compact .dl span{font-size:34px}
@@ -252,6 +253,7 @@ body.idle,body.idle *{cursor:none!important}
 
 /* 세로 화면 */
 #stage.portrait .top{height:auto;flex-direction:column;align-items:flex-start;gap:12px}
+#stage.portrait .brand{margin-left:0;order:1}
 #stage.portrait .clock{font-size:150px}
 #stage.portrait .wx{align-self:stretch}
 #stage.portrait .days{grid-template-columns:1fr;grid-auto-rows:1fr}
@@ -301,11 +303,6 @@ body.idle,body.idle *{cursor:none!important}
       <div class="clock" id="clock" aria-label="현재 시각"><span id="hh">--</span><span class="c">:</span><span id="mm">--</span></div>
       <div class="date"><span class="md" id="dmd">-</span><span class="wd" id="dwd">-</span></div>
     </div>
-    <div class="wx" id="wx" hidden>
-      <svg class="wxi" viewBox="0 0 64 64" aria-hidden="true"><use id="wxUse" href="#wx-sun"/></svg>
-      <b class="now" id="wxNow"></b>
-      <div class="sub"><b id="wxCond"></b><span id="wxRange"></span><span id="wxPop"></span></div>
-    </div>
     <div class="brand">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M6 26a5 5 0 0 1 5-5h7l26-13v44L18 39h-7a5 5 0 0 1-5-5z" fill="#ff7a59"/>
@@ -314,6 +311,11 @@ body.idle,body.idle *{cursor:none!important}
       </svg>
       <span>스마트 알림판</span>
       <span class="none-pill" id="noneNotice" hidden>공지 없음</span>
+    </div>
+    <div class="wx" id="wx" hidden>
+      <svg class="wxi" viewBox="0 0 64 64" aria-hidden="true"><use id="wxUse" href="#wx-sun"/></svg>
+      <b class="now" id="wxNow"></b>
+      <div class="sub"><b id="wxCond"></b><span id="wxRange"></span><span id="wxPop"></span></div>
     </div>
   </header>
 
@@ -987,6 +989,16 @@ function fitLists(lists, max, min, noPage){
   const fs = sizes.length ? Math.min(...sizes) : max;
   for(const l of lists) applyFit(l, fs, noPage);
 }
+/* 오늘·내일 일정: 내일이 빽빽해도 오늘은 여유가 있으면 더 크게(내일의 DAY_RATIO 배까지) 쓴다. 내일이 오늘보다 커지지는 않는다. */
+const DAY_RATIO = 1.3;
+function fitDays(){
+  const a = $("#list-today"), b = $("#list-next");
+  const sa = bestSize(a, 66, 38), sb = bestSize(b, 66, 38);
+  const fa = Math.min(sa == null ? 66 : sa, sb == null ? 66 : Math.round(sb * DAY_RATIO));
+  applyFit(a, fa);
+  applyFit(b, Math.min(sb == null ? 66 : sb, fa));
+  return sa == null ? null : fa;
+}
 function showPage(listEl, p){
   p.pages.forEach((arr, i) => arr.forEach(li => { li.hidden = i !== p.i; }));
   if(p.pg) p.pg.textContent = `${p.i + 1}/${p.pages.length}`;
@@ -1010,12 +1022,18 @@ function fitWidthAll(nodes, max, min, room = 1){
 }
 function fitAll(){
   const stage = $("#stage"), cp = stage.classList.contains("compact");
-  fitLists([$("#list-notice")], 56, 38);          /* 공지가 차지하는 높이가 정해져야 카드 높이도 정해진다 */
-  fitLists([$("#list-today"), $("#list-next")], 66, 38);   /* 오늘·내일은 글자 크기가 같다 */
+  const notice = $("#list-notice");
+  fitLists([notice], 56, 38);                     /* 공지가 차지하는 높이가 정해져야 카드 높이도 정해진다 */
+  const day = fitDays();
+  if(day && !$("#notices").hidden && parseFloat(notice.style.getPropertyValue("--fs")) > day){
+    applyFit(notice, Math.max(38, day));          /* 공지가 오늘 일정보다 크지 않게 줄이고, 그만큼 늘어난 카드에 다시 맞춘다 */
+    fitDays();
+  }
   fitLists([$("#list-lunch")], 66, 38);          /* 식단은 칸마다 따로 */
   fitLists([$("#list-dinner")], 66, 38);
   fitWidthAll([...document.querySelectorAll("#week .n")], cp ? 40 : 52, 22, .92);
   fitWidthAll([...document.querySelectorAll("#box-dv .kv b")], cp ? 44 : 58, 26);
+  fitWidthAll([...document.querySelectorAll("#stuRows em")], cp ? 21 : 27, 14);      /* 반이 많은 학년도 끝 반까지 보이게 */
   if(stage.classList.contains("worship-on")){
     const hText = $("#w-hymn").classList.contains("has-text"), bText = $("#w-bible").classList.contains("has-text");
     fitWidth($("#w-hymn b"), hText ? (cp ? 90 : 120) : (cp ? 300 : 340), 60);       /* 머리(번호)를 먼저 맞춰야 글이 들어갈 높이가 정해진다 */
