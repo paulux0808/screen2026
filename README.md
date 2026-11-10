@@ -8,6 +8,11 @@
 - **Apps Script 주소**: 이 저장소는 Apps Script 웹앱을 쓰지 않는다(해당 없음).
 - 브라우저 저장본(`board:cache:v1`, `board:word:v1`)에는 받아 온 시트 ID 가 같이 저장되며, 현재 `SHEET_ID` 와 다르면 쓰지 않는다.
 
-## 새 화면 시안 (`prototype.html`)
-- `index.html` 과 같은 시트·같은 방식으로 자료를 읽고 화면 구성만 새로 짠 시안. `prototype.html?demo` 로 열면 예시 자료로 본다.
-- 일과 시각표는 `BELLS`, 급식을 내리는 시각은 `MEAL.lunchEnd`·`dinnerEnd` 에서 고친다.
+## 시각이 바뀌면 고칠 곳
+- **일과 시각표**: `index.html` 의 `BELLS` (교시·점심의 시작·끝). 일과 줄과 '지금 교시' 표시가 이 값을 따른다.
+- **급식을 내리는 시각**: `MEAL.lunchEnd`(현재 12:00) · `MEAL.dinnerEnd`(현재 19:00).
+- **아침 예배 화면**: `WORSHIP` 의 `from`·`to`.
+
+## 미리보기
+- `index.html?demo` 로 열면 시트 없이 예시 자료로 본다. 맨 아래 줄의 단추로 수업 중(10:30) 화면과 아침 예배 화면을 볼 수 있다.
+- `?date=2026-10-01` `?time=07:56` 을 붙이면 그 날짜·시각인 것처럼 본다.

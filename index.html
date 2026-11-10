@@ -4,264 +4,206 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#050912">
+<meta name="theme-color" content="#0d1a15">
 <meta name="robots" content="noindex, nofollow">
 <title>스마트 알림판</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-/* 1920 × 1080 을 기준으로 그리고, 화면 크기에 맞춰 통째로 키우고 줄인다. 아래 px 는 모두 그 기준 값이다. */
+/* 배치: 교무실 칠판처럼 카드 없이 줄(괘선)로 칸을 나눈다.
+   위 = 시계·날짜·날씨 / 틀 안 = 오늘(넓게) | 내일 → 공지 띠 → 급식 | 기도 | 학생현황 / 맨 아래 = 상태 줄.
+   1920 × 1080 을 기준으로 그리고 화면 크기에 맞춰 통째로 키우고 줄인다. 아래 px 는 모두 그 기준 값이다. */
 :root{
-  --bg:#050912;
-  --ink:#f7f9ff; --ink-2:#c9d1ea; --ink-3:#8f9bbd;
-  --line:rgba(255,255,255,.11);
-  --today:#ffcf4d; --next:#62d4ff; --meal:#7fe3b0; --notice:#ff8a78; --pray:#cdb4ff; --stu:#ffb7d8; --ok:#46d58d;
+  --board:#0d1a15;                 /* 칠판 */
+  --wash:#15291f;                  /* 오늘 칸: 칠판보다 한 톤 밝게 */
+  --chalk:#f5f2e8; --chalk-2:#bfcdc3; --chalk-3:#86a092;      /* 분필 흰색 · 흐린 글 · 더 흐린 글 */
+  --rule:rgba(245,242,232,.3); --hair:rgba(245,242,232,.11);  /* 칸을 나누는 줄 · 줄 사이 가는 줄 */
+  --today:#f7d463;                 /* 노란 분필: 오늘·지금 */
+  --notice:#ff9c8a;                /* 공지 */
+  --sat:#8fd0ff;
+  --ok:#58d39a; --warn:#ffc04d; --err:#ff6b6b;
   --sans:"Pretendard Variable",Pretendard,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","Nanum Gothic",system-ui,sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
-html,body{height:100%;overflow:hidden;background:var(--bg)}
-body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;user-select:none;-webkit-user-select:none}
+html,body{height:100%;overflow:hidden;background:var(--board)}
+body{font-family:var(--sans);color:var(--chalk);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;user-select:none;-webkit-user-select:none}
 body.idle,body.idle *{cursor:none!important}
 
-#stage{
-  position:absolute;left:0;top:0;transform-origin:0 0;
-  display:flex;flex-direction:column;gap:16px;padding:22px 32px 12px;
-  background:
-    radial-gradient(1500px 820px at 12% -18%,#13224b 0%,rgba(19,34,75,0) 62%),
-    radial-gradient(1300px 760px at 104% 112%,#22144a 0%,rgba(34,20,74,0) 58%),
-    var(--bg);
-}
+#fit{position:relative;height:100%;overflow:hidden}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0;display:flex;flex-direction:column;padding:20px 40px 6px;background:var(--board)}
 
-/* ── 머리: 시계 · 날짜 ─────────────────────────────── */
-.top{flex:none;display:flex;align-items:center;gap:30px;height:126px}
-.when{display:flex;align-items:center;gap:34px}
-.clock{font-size:132px;font-weight:800;line-height:1;letter-spacing:-.025em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 44px rgba(120,160,255,.35)}
-.clock .c{display:inline-block;margin:0 .03em;transform:translateY(-.06em);animation:blink 1s steps(1,end) infinite}
-@keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:.18}}
-.date{display:flex;flex-direction:column;gap:4px;line-height:1.04}
-.date .md{font-size:62px;font-weight:800}
-.date .wd{font-size:44px;font-weight:700;color:var(--ink-2)}
-.date .wd.sat{color:var(--next)} .date .wd.sun{color:var(--notice)}
-.brand{display:flex;align-items:center;gap:14px;margin-left:auto;font-size:32px;font-weight:800;color:var(--ink-3);white-space:nowrap}   /* 이름은 오른쪽으로 밀고, 날씨가 있으면 그 옆에 선다 */
-.brand svg{width:44px;height:44px;flex:none}
-.wx{display:flex;align-items:center;gap:18px;padding:8px 28px 8px 20px;border-radius:28px;background:rgba(255,255,255,.055);border:1.5px solid var(--line)}
+/* ── 머리: 시계 · 날짜 · 날씨 ─────────────────────── */
+.top{flex:none;display:flex;align-items:center;gap:40px;height:132px;padding:0 4px 12px}
+.clock{font-size:118px;font-weight:800;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.clock .c{display:inline-block;margin:0 .02em;transform:translateY(-.07em);animation:blink 2s steps(1,end) infinite}
+@keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:.25}}
+.date{font-size:58px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+.date .wd{margin-left:.32em;font-weight:700;color:var(--chalk-2)}
+.date .wd.sat{color:var(--sat)} .date .wd.sun{color:var(--notice)}
+.wx{margin-left:auto;display:flex;align-items:center;gap:18px}
 .wxi{width:78px;height:78px;flex:none}
 .wx .now{font-size:72px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.wx .sub{display:flex;flex-direction:column;gap:1px;font-size:29px;font-weight:700;line-height:1.14;color:var(--ink-2);white-space:nowrap}
-.wx .sub b{font-weight:800;color:#fff}
-.none-pill{font-size:28px;font-weight:700;color:var(--ink-3);border:1.5px solid var(--line);border-radius:999px;padding:4px 18px;margin-left:8px}
+.wx .sub{display:flex;flex-direction:column;font-size:28px;font-weight:700;line-height:1.16;color:var(--chalk-2);white-space:nowrap}
+.wx .sub b{font-weight:800;color:var(--chalk)}
 
-/* ── 오늘 · 내일 카드 ─────────────────────────────── */
-.days{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
-.card{
-  --acc:var(--today);
-  position:relative;display:flex;flex-direction:column;min-height:0;overflow:hidden;
-  border-radius:32px;padding:22px 30px 14px;
-  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.035));
-  border:1.5px solid var(--line);
-}
-.card::before{content:"";position:absolute;left:0;right:0;top:0;height:9px;background:var(--acc)}
-.card.today{box-shadow:0 0 0 2px rgba(255,207,77,.5),0 24px 70px -28px rgba(255,207,77,.45)}
-.card.next{--acc:var(--next);box-shadow:0 0 0 2px rgba(98,212,255,.28),0 24px 70px -30px rgba(98,212,255,.35);transition:box-shadow .6s ease}
-.card.next[data-phase="lunch"],.card.next[data-phase="dinner"]{box-shadow:0 0 0 2px rgba(127,227,176,.38),0 24px 70px -30px rgba(127,227,176,.4)}
-.card::before{transition:background .6s ease}
-.card-h{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 18px;min-height:82px;padding-bottom:10px;margin-bottom:4px;border-bottom:1.5px solid rgba(255,255,255,.12)}
+/* ── 틀: 줄로 나눈 칸들 ───────────────────────────── */
+.frame{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:2px solid var(--rule);border-radius:6px}
+
+/* ── 일과 줄: 1~7교시와 점심을 시간 길이대로 늘어놓고 지금 자리를 표시한다 ── */
+.bells{flex:none;position:relative;display:flex;height:56px;border-bottom:2px solid var(--rule)}
+.bell{flex:1 0 0;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:10px;overflow:hidden;white-space:nowrap;line-height:56px;border-left:1px solid var(--hair)}
+.bell:first-child{border-left:0}
+.bell b{font-size:26px;font-weight:800}
+.bell span{font-size:21px;font-weight:700;color:var(--chalk-3);font-variant-numeric:tabular-nums}
+.bell.gap{background:rgba(0,0,0,.22)}
+.bell.rest b{font-weight:700;color:var(--chalk-2)}
+.bell.past{opacity:.38}
+.bell.now{background:linear-gradient(#221a00,#221a00) left bottom / var(--p,0%) 7px no-repeat,var(--today)}   /* 아래 검은 줄 = 지나간 만큼 */
+.bell.now b,.bell.now span{color:#221a00}
+.bell.soon{box-shadow:inset 0 0 0 3px var(--today)}
+.bell.soon span{color:var(--today)}
+#stage.worship-on .bells{display:none}
+
+/* ── 오늘 · 내일 ──────────────────────────────────── */
+.days{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1.38fr) minmax(0,1fr)}
+.day{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;padding:14px 30px 6px}
+.day + .day{border-left:2px solid var(--rule)}
+.day.today{background:var(--wash)}
+.day-h{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 18px;min-height:80px;padding-bottom:6px;border-bottom:2px solid var(--hair)}
 .dl{display:flex;align-items:baseline;gap:16px;min-width:0}
-.dl b{font-size:58px;font-weight:900;color:var(--acc);white-space:nowrap}
-.dl span{font-size:40px;font-weight:700;color:var(--ink-2);white-space:nowrap}
-.dl em{font-style:normal;font-size:26px;font-weight:700;color:var(--ink-3);border:1.5px solid var(--line);border-radius:999px;padding:2px 14px;white-space:nowrap;align-self:center}
-.hd-r{display:flex;align-items:center;gap:20px;flex:none}
+.dl b{font-size:62px;font-weight:900;line-height:1.15;color:var(--today);white-space:nowrap}
+.day.next .dl b{font-size:48px;font-weight:800;color:var(--chalk)}
+.dl span{font-size:36px;font-weight:700;color:var(--chalk-2);white-space:nowrap}
+.dl em{font-style:normal;font-size:24px;font-weight:700;color:var(--chalk-3);border:1.5px solid var(--hair);border-radius:999px;padding:2px 14px;white-space:nowrap;align-self:center}
+.hd-r{display:flex;align-items:baseline;gap:18px;flex:none}
 .night{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
-.night i{font-style:normal;font-size:27px;font-weight:700;color:var(--ink-3)}
-.night b{font-size:46px;font-weight:800;color:#fff}
-.night.off b{font-size:36px;font-weight:700;color:var(--ink-3)}
-.pg{font-size:28px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;min-width:2.4em;text-align:right}
+.night i{font-style:normal;font-size:25px;font-weight:700;color:var(--chalk-3)}
+.night b{font-size:44px;font-weight:800}
+.day.next .night b{font-size:38px}
+.night.off b{font-size:32px;font-weight:700;color:var(--chalk-3)}
+.pg{font-size:26px;font-weight:800;color:var(--today);font-variant-numeric:tabular-nums}
+.pg:empty{display:none}
 
-/* ── 일정 줄 ───────────────────────────────────────── */
+/* ── 일정 줄 ──────────────────────────────────────── */
 .list{list-style:none;flex:1 1 0;min-height:0;overflow:hidden;font-size:var(--fs,54px);padding-top:4px}
 .list.flip{animation:flip .45s ease-out}
 @keyframes flip{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.ev{display:flex;align-items:baseline;gap:.4em;padding:.2em 0;border-bottom:1px solid rgba(255,255,255,.085);line-height:1.24}
+.ev{display:flex;align-items:baseline;gap:.42em;padding:.2em 0;border-bottom:1px solid var(--hair);line-height:1.24}
 .ev:last-child{border-bottom:0}
-.cb{flex:none;width:max(2.9em,120px)}                 /* 칩이 들어가는 칸: 부서 이름이 길든 짧든 폭이 같다 */
+.ev.past{opacity:.4}                                   /* 교시가 이미 끝난 일정 */
+.tg.now{background:var(--today);color:#221a00}         /* 지금 그 교시 */
+.cb{flex:none;width:max(2.6em,116px)}                 /* 칩이 들어가는 칸: 부서 이름이 길든 짧든 폭이 같다 */
 .chip{
   display:block;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  font-size:max(.66em,27px);font-weight:800;line-height:1.3;padding:.16em .1em;border-radius:.42em;
+  font-size:max(.56em,26px);font-weight:800;line-height:1.3;padding:.16em .1em;border-radius:.3em;
   background:hsl(var(--dh) calc(var(--ds) + 24%) 80%);color:hsl(var(--dh) 55% 13%);
 }
-.chip.l5{font-size:max(.54em,22px)}          /* 이름이 5자 */
-.chip.l6{font-size:max(.46em,19px)}          /* 6자 */
-.chip.l7{font-size:max(.4em,17px)}           /* 7자 이상 */
+.chip.l5{font-size:max(.46em,21px)}
+.chip.l6{font-size:max(.39em,18px)}
+.chip.l7{font-size:max(.33em,16px)}
 .body{flex:1;min-width:0;font-weight:700;letter-spacing:-.012em;word-break:keep-all;overflow-wrap:anywhere}
 .tg{
-  display:inline-block;font-style:normal;font-size:max(.5em,24px);font-weight:700;line-height:1.25;
-  padding:.06em .5em;margin-left:.45em;border-radius:.4em;white-space:nowrap;vertical-align:.16em;
-  background:rgba(255,255,255,.13);color:var(--ink-2);
+  display:inline-block;font-style:normal;font-size:max(.5em,23px);font-weight:700;line-height:1.25;
+  padding:.06em .5em;margin-left:.45em;border-radius:.3em;white-space:nowrap;vertical-align:.16em;
+  background:rgba(245,242,232,.13);color:var(--chalk-2);
 }
 .nw{white-space:nowrap}
-.tg.cat{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:var(--ink-3)}
-.empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;text-align:center;font-size:.8em;font-weight:600;color:var(--ink-3);border:0!important}
+.tg.cat{background:transparent;border:1.5px solid rgba(245,242,232,.32);color:var(--chalk-3)}
+.empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;text-align:center;font-size:.72em;font-weight:600;color:var(--chalk-3);border:0!important}
 
-/* ── 내일 카드: 내일 일정(10초) → 중식(5초) → 석식(10초) 순으로 돈다 ── */
-.panes{flex:1 1 0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr)}
-.panes > .pane{grid-area:1 / 1;opacity:0;visibility:hidden;transition:opacity .6s ease,visibility 0s .6s}
-.panes > .pane.on{opacity:1;visibility:visible;transition:opacity .6s ease}
-.card .hd-meal{display:none}
-.card.next[data-phase="lunch"],.card.next[data-phase="dinner"]{--acc:var(--meal)}
-.card.next:not([data-phase="next"]) .hd-day{display:none!important}
-.card.next:not([data-phase="next"]) .hd-meal{display:flex}
-.kcal{font-size:32px;font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.rot{display:flex;gap:10px;align-items:center}
-.rot i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.22)}
-.rot i.on{background:var(--acc);box-shadow:0 0 12px var(--acc)}
-.list.meal{display:grid;grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:1.2em;align-content:start}
-.dish{position:relative;padding:.14em 0 .14em .9em;font-weight:700;line-height:1.24;border-bottom:1px solid rgba(255,255,255,.07);word-break:keep-all;overflow-wrap:anywhere}
-.dish:last-child{border-bottom:0}
-.dish::before{content:"";position:absolute;left:.1em;top:.6em;width:.34em;height:.34em;border-radius:50%;background:var(--meal)}
-
-/* ── 공지사항 (있을 때만 나타난다) ─────────────────── */
-.notices{
-  flex:none;display:flex;align-items:center;gap:28px;padding:14px 30px;border-radius:30px;
-  background:linear-gradient(90deg,rgba(255,138,120,.24),rgba(255,138,120,.08));
-  border:1.5px solid rgba(255,138,120,.5);
-}
-.notices .nl{flex:none;font-size:38px;font-weight:900;color:#2b0c07;background:var(--notice);border-radius:.45em;padding:.16em .7em}
-.notices .list{flex:1;max-height:184px;padding-top:0;font-size:var(--fs,54px)}
-.nt{position:relative;padding:.1em 0 .1em .7em;font-weight:800;line-height:1.24;word-break:keep-all;overflow-wrap:anywhere}
-.nt::before{content:"";position:absolute;left:0;top:.62em;width:.3em;height:.3em;border-radius:50%;background:var(--notice)}
+/* ── 공지 띠 (있을 때만) ──────────────────────────── */
+.notices{flex:none;display:flex;align-items:center;gap:24px;padding:12px 30px;border-top:2px solid var(--rule);background:rgba(255,156,138,.14)}
+.notices .nl{flex:none;font-size:30px;font-weight:900;color:#3a0f08;background:var(--notice);border-radius:6px;padding:.12em .6em}
+.notices .list{flex:1;max-height:116px;padding-top:0;font-size:var(--fs,44px)}
+.nt{position:relative;padding:.08em 0 .08em .7em;font-weight:800;line-height:1.24;word-break:keep-all;overflow-wrap:anywhere}
+.nt::before{content:"";position:absolute;left:0;top:.62em;width:.28em;height:.28em;border-radius:50%;background:var(--notice)}
 .notices .pg{color:var(--notice)}
 
-/* ── 아래 줄: 오늘의 예배(찬송·성경) · 이번 주 기도 · 학생현황 ───────── */
-.info{flex:none;display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.3fr) minmax(0,1fr);gap:18px;height:206px}
-.box{
-  --c:var(--ink-2);
-  display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0;overflow:hidden;
-  position:relative;border-radius:28px;padding:14px 26px 14px;
-  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));border:1.5px solid var(--line);
-}
-.box::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--c);opacity:.85}
-.box h3{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:28px;font-weight:800;letter-spacing:.05em;color:var(--c);line-height:1.1}
-.box h3 b{font-size:38px;font-weight:900;letter-spacing:0;color:#fff;line-height:1}
-.dv .kv{display:flex;align-items:baseline;gap:.42em;min-width:0;white-space:nowrap;font-size:58px;font-weight:800;line-height:1.18}
-.kv i{font-style:normal;font-size:.5em;font-weight:700;color:var(--ink-3)}
-.kv b{min-width:0;overflow:hidden;text-overflow:clip;font-weight:800}
-.kv.dim b{color:var(--ink-3);font-weight:600}
-.week{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.wk{min-width:0;border-radius:18px;text-align:center;padding:6px 2px 10px;background:rgba(255,255,255,.05)}
-.wk .d{display:block;font-size:28px;font-weight:700;color:var(--ink-3);white-space:nowrap}
-.wk .n{display:block;font-size:52px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1.25}
-.wk.past{opacity:.5}
-.wk.now{background:var(--today);box-shadow:0 0 28px rgba(255,207,77,.35)}
-.wk.now .d{color:#6d4e00} .wk.now .n{color:#241800}
-.wk .n.nil{color:var(--ink-3);font-weight:600}
-#stuRows{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:baseline;gap:0 16px;line-height:1.04}   /* 세 줄이 한 표라 숫자 칸이 줄마다 어긋나지 않는다 */
-.gr{display:contents}
-.gr span{font-size:29px;font-weight:700;color:var(--ink-3)}
-.gr b{font-size:42px;font-weight:800;min-width:1.8em;text-align:right;font-variant-numeric:tabular-nums}
-.gr em{font-style:normal;font-size:27px;font-weight:600;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
+/* ── 아래 줄: 급식 · 기도 · 학생현황 (늘 보인다) ───── */
+.info{flex:none;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.25fr) minmax(0,1fr);height:182px;border-top:2px solid var(--rule)}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;overflow:hidden;padding:12px 28px 14px}
+.cell + .cell{border-left:2px solid var(--rule)}
+.cell h3{flex:none;display:flex;align-items:baseline;gap:14px;font-size:26px;font-weight:800;letter-spacing:.04em;line-height:1.2;color:var(--chalk-3);white-space:nowrap}
+.cell h3 .sp{flex:1}
+.cell h3 > b{font-size:36px;font-weight:900;letter-spacing:0;line-height:1;color:var(--chalk)}
+/* 급식: 다가오는 끼니만. 중식·석식이 둘 다 남았으면 번갈아 보이고, 어느 쪽인지는 이름표로 알린다 */
+.tabs{display:flex;gap:18px}
+.tab{font-size:32px;font-weight:800;letter-spacing:0;line-height:1.12;color:var(--chalk-3);opacity:.55;border-bottom:4px solid transparent;transition:opacity .4s ease,border-color .4s ease}
+.tab.on{color:var(--chalk);opacity:1;border-bottom-color:var(--today)}
+.kcal{font-size:26px;font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums}
+.menus{flex:1 1 0;min-height:0;overflow:hidden;display:grid;grid-template:minmax(0,1fr) / minmax(0,1fr)}
+.menus > *{grid-area:1 / 1;min-height:0}
+.menu{overflow:hidden;margin-left:-.9em;font-size:var(--fs,40px);font-weight:700;line-height:1.28;word-break:keep-all;opacity:0;visibility:hidden;transition:opacity .5s ease,visibility 0s .5s}
+.menu.on{opacity:1;visibility:visible;transition:opacity .5s ease}
+.dish{display:inline-block;position:relative;padding-left:.9em}                 /* 가운뎃점은 음식 앞에 찍고, 줄 맨 앞의 점은 칸 밖으로 밀려 잘린다 */
+.dish::before{content:"";position:absolute;left:.36em;top:.56em;width:.16em;height:.16em;border-radius:50%;background:var(--chalk-3)}
+.none{align-self:center;margin-left:0;font-size:30px;font-weight:600;color:var(--chalk-3)}
+/* 기도: 이번 주 다섯 날 + 오늘 찬송·성경 */
+.dv{min-width:0;overflow:hidden;font-size:30px;font-weight:700;letter-spacing:0;color:var(--chalk-2)}
+.dv b{font-weight:800;color:var(--chalk)}
+.week{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.wk{display:flex;flex-direction:column;justify-content:center;min-width:0;text-align:center;border-radius:6px;background:rgba(245,242,232,.055)}
+.wk .d{display:block;font-size:24px;font-weight:700;color:var(--chalk-3);white-space:nowrap}
+.wk .n{display:block;font-size:44px;font-weight:800;line-height:1.22;white-space:nowrap;overflow:hidden}
+.wk.past{opacity:.45}
+.wk.now{background:var(--today)}
+.wk.now .d{color:#6d5200} .wk.now .n{color:#221a00}
+.wk .n.nil{color:var(--chalk-3);font-weight:600}
+/* 학생현황: 학년 × 반 표 */
+#stuRows{flex:1 1 0;min-height:0;display:grid;grid-template-columns:auto repeat(var(--n,6),minmax(0,1fr)) auto;align-content:space-around;align-items:baseline;column-gap:6px;font-variant-numeric:tabular-nums}
+#stuRows .g{font-size:27px;font-weight:700;color:var(--chalk-3);white-space:nowrap;padding-right:10px}
+#stuRows .c{font-size:min(27px,calc(180px / var(--n,6)));font-weight:600;color:var(--chalk-2);text-align:right}
+#stuRows b{font-size:34px;font-weight:800;line-height:1;text-align:right;padding-left:14px}
 
-/* ── 아침 예배(7:50~7:55): 그 시간에만 찬송·성경을 화면 가득 ── */
-.worship{
-  display:none;flex:1 1 0;min-height:0;flex-direction:column;justify-content:center;gap:24px;position:relative;overflow:hidden;
-  border-radius:36px;padding:30px 56px 32px;
-  background:linear-gradient(180deg,rgba(205,180,255,.17),rgba(205,180,255,.06));
-  border:2px solid rgba(205,180,255,.55);box-shadow:0 0 0 2px rgba(205,180,255,.22),0 30px 90px -30px rgba(205,180,255,.55);
-}
-.worship::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:var(--pray)}
-.wh{display:flex;align-items:baseline;gap:30px}
-.wh b{font-size:62px;font-weight:900;color:var(--pray)}
-.wh span{font-size:40px;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.wb{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr);gap:0;align-items:stretch}
+/* ── 아침 예배(7:50~7:55): 그 시간에만 찬송·성경이 틀을 가득 채운다 ── */
+.worship{display:none;flex:1 1 0;min-height:0;flex-direction:column;justify-content:center;gap:20px;overflow:hidden;padding:22px 48px 28px;background:var(--wash)}
+.wh{display:flex;align-items:baseline;gap:28px;padding-bottom:12px;border-bottom:2px solid var(--hair)}
+.wh b{font-size:60px;font-weight:900;color:var(--today)}
+.wh span{font-size:38px;font-weight:700;color:var(--chalk-2);font-variant-numeric:tabular-nums}
+.wh .wp{margin-left:auto;font-size:54px;font-weight:800;color:var(--chalk-2)}
+.wh .wp strong{margin-left:.35em;font-weight:900;color:var(--chalk)}
+.wb{flex:1 1 0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr);align-items:stretch}
 .wb.one{grid-template-columns:minmax(0,1fr)}
-.wcol{min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr;padding:0 34px;text-align:center}
-.wcol + .wcol{border-left:2px solid rgba(255,255,255,.16)}          /* 두 칸이 한 줄로 붙어 읽히지 않게 */
-.wcol i{display:block;font-style:normal;font-size:60px;font-weight:800;color:var(--ink-3);letter-spacing:.1em}
-.wcol b{display:block;align-self:center;font-weight:900;line-height:1.14;white-space:nowrap;overflow:hidden;color:#fff;letter-spacing:-.02em}
-.wh .wp{margin-left:auto;font-size:58px;font-weight:800;color:var(--ink-2)}
-.wh .wp strong{margin-left:.35em;font-weight:900;color:#fff}
 .wb.txt{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
-/* 가사·본문이 있는 칸: 머리는 한 줄(찬송 430장), 그 아래에 글 */
+.wcol{min-width:0;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr;padding:0 34px;text-align:center}
+.wcol:first-child{padding-left:0} .wcol:last-child{padding-right:0}
+.wcol + .wcol{border-left:2px solid var(--rule)}
+.wcol i{display:block;font-style:normal;font-size:56px;font-weight:800;color:var(--chalk-3);letter-spacing:.1em}
+.wcol b{display:block;align-self:center;font-weight:900;line-height:1.14;white-space:nowrap;overflow:hidden;letter-spacing:-.02em}
 .wcol .wtext,.wcol .pg{display:none}
 .wcol.has-text{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr);column-gap:22px;align-items:center;text-align:left}
-.wcol.has-text i{font-size:54px}
+.wcol.has-text i{font-size:50px}
 .wcol.has-text b{text-align:left}
-.wcol.has-text .pg{display:block;font-size:34px;font-weight:800;color:var(--pray)}
-.wcol.has-text .wtext{display:block;grid-column:1 / -1;align-self:stretch;margin-top:10px;padding:14px 0 0;border-top:2px solid rgba(255,255,255,.14);font-size:var(--fs,48px);line-height:1.34}
-.wtext .vs{padding:.12em 0;font-weight:600;color:#f3f5ff;word-break:keep-all;overflow-wrap:anywhere}
-.wtext .vs.n{padding-left:1.08em;text-indent:-1.08em}     /* 번호 칸(글자 0.6배 × 1.8em)만큼: 둘째 줄이 첫 줄 글자와 나란하다 */
-.wtext .vn{display:inline-block;width:1.5em;margin-right:.3em;text-indent:0;font-size:.6em;font-weight:900;color:var(--pray);vertical-align:.22em}
+.wcol.has-text .pg{display:block;font-size:32px}
+.wcol.has-text .wtext{display:block;grid-column:1 / -1;align-self:stretch;margin-top:8px;padding:12px 0 0;border-top:2px solid var(--hair);font-size:var(--fs,48px);line-height:1.34}
+.wtext .vs{padding:.12em 0;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
+.wtext .vs.n{padding-left:1.08em;text-indent:-1.08em}
+.wtext .vn{display:inline-block;width:1.5em;margin-right:.3em;text-indent:0;font-size:.6em;font-weight:900;color:var(--today);vertical-align:.22em}
 #stage.worship-on .days,#stage.worship-on .notices,#stage.worship-on .info{display:none}
 #stage.worship-on .worship{display:flex}
 
-/* ── 맨 아래 줄 · 안내 층 ──────────────────────────── */
-.status{flex:none;height:30px;display:flex;align-items:center;gap:14px;font-size:23px;font-weight:600;color:var(--ink-3);white-space:nowrap;overflow:hidden}
-.dot{flex:none;width:13px;height:13px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
-.dot.warn{background:#ffc04d;box-shadow:0 0 12px #ffc04d}
-.dot.err{background:#ff6b6b;box-shadow:0 0 12px #ff6b6b}
+/* ── 맨 아래 줄 · 안내 층 ─────────────────────────── */
+.status{flex:none;height:36px;display:flex;align-items:center;gap:14px;padding:0 4px;font-size:21px;font-weight:600;color:var(--chalk-3);white-space:nowrap;overflow:hidden}
+.dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--ok)}
+.dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
 .status .sp{flex:1}
-#schoolCode{padding:1px 14px;border:1.5px solid var(--line);border-radius:999px;font-size:.9em;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+#schoolCode{font-variant-numeric:tabular-nums;letter-spacing:.04em}
 #schoolCode:empty{display:none}
 .status .cr{min-width:0;overflow:hidden;text-overflow:ellipsis}
-#stage.portrait .status .cr{display:none}
-.overlay{
-  position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:80px;text-align:center;
-  background:rgba(5,9,18,.94);
-}
+.status button{font:inherit;font-weight:700;color:var(--chalk);background:rgba(245,242,232,.1);border:1.5px solid var(--rule);border-radius:999px;padding:1px 16px;cursor:pointer}
+.status button:hover{background:rgba(245,242,232,.18)}
+.status button:focus-visible{outline:3px solid var(--today);outline-offset:2px}
+.overlay{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:80px;text-align:center;background:rgba(13,26,21,.95)}
 .overlay b{font-size:64px;font-weight:900}
-.overlay p{font-size:36px;font-weight:600;color:var(--ink-2);line-height:1.4;max-width:1400px;word-break:keep-all}
-.overlay small{font-size:28px;color:var(--ink-3);max-width:1500px;word-break:break-all}
+.overlay p{font-size:36px;font-weight:600;color:var(--chalk-2);line-height:1.4;max-width:1400px;word-break:keep-all}
+.overlay small{font-size:28px;color:var(--chalk-3);max-width:1500px;word-break:break-all}
 
-/* 세로가 낮은 초광폭 화면: 머리와 아래 줄을 줄여 일정 칸을 지킨다 */
-#stage.compact{gap:12px;padding:14px 28px 8px}
-#stage.compact .top{height:98px}
-#stage.compact .clock{font-size:102px}
-#stage.compact .date .md{font-size:46px}
-#stage.compact .date .wd{font-size:34px}
-#stage.compact .wx{padding:4px 20px 4px 14px;gap:12px;border-radius:22px}
-#stage.compact .wxi{width:58px;height:58px}
-#stage.compact .wx .now{font-size:54px}
-#stage.compact .wx .sub{font-size:22px}
-#stage.compact .brand{font-size:27px}
-#stage.compact .brand svg{width:36px;height:36px}
-#stage.compact .card{padding:14px 26px 8px;border-radius:26px}
-#stage.compact .dl b{font-size:48px}
-#stage.compact .dl span{font-size:34px}
-#stage.compact .night b{font-size:38px}
-#stage.compact .night i{font-size:23px}
-#stage.compact .card-h{padding-bottom:8px}
-#stage.compact .notices{padding:8px 26px;border-radius:24px}
-#stage.compact .notices .nl{font-size:30px}
-#stage.compact .info{height:172px;gap:14px}
-#stage.compact .box{padding:8px 22px 10px;border-radius:22px}
-#stage.compact .box h3{font-size:24px}
-#stage.compact .box h3 b{font-size:32px}
-#stage.compact .dv .kv{font-size:44px}
-#stage.compact .wk .d{font-size:22px}
-#stage.compact .wk .n{font-size:40px}
-#stage.compact .gr span{font-size:23px}
-#stage.compact .gr b{font-size:32px}
-#stage.compact .gr em{font-size:21px}
-#stage.compact .status{height:26px;font-size:20px}
-
-#stage.compact .worship{padding:16px 40px 18px;gap:12px}
-#stage.compact .wh b{font-size:46px}
-#stage.compact .wh span{font-size:32px}
-#stage.compact .wcol i{font-size:42px}
-#stage.compact .wh .wp{font-size:40px}
-
-/* 세로 화면 */
-#stage.portrait .top{height:auto;flex-direction:column;align-items:flex-start;gap:12px}
-#stage.portrait .brand{margin-left:0;order:1}
-#stage.portrait .clock{font-size:150px}
-#stage.portrait .wx{align-self:stretch}
-#stage.portrait .days{grid-template-columns:1fr;grid-auto-rows:1fr}
-#stage.portrait .info{grid-template-columns:1fr;height:auto;gap:14px}
-#stage.portrait .box{gap:10px}
-#stage.portrait .wb{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
-#stage.portrait .wb.one{grid-template-rows:minmax(0,1fr)}
-#stage.portrait .wcol + .wcol{border-left:0;border-top:2px solid rgba(255,255,255,.16);margin-top:14px;padding-top:14px}
+@media (prefers-reduced-motion:reduce){
+  .clock .c,.list.flip{animation:none}
+  .menu,.menu.on,.tab{transition:none}
+}
 </style>
 </head>
 <body>
@@ -269,49 +211,39 @@ body.idle,body.idle *{cursor:none!important}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="wx-sun" viewBox="0 0 64 64">
-      <circle cx="32" cy="32" r="12" fill="#ffcf4d"/>
-      <path d="M32 6v7M32 51v7M6 32h7M51 32h7M13.6 13.6l5 5M45.4 45.4l5 5M13.6 50.4l5-5M45.4 18.6l5-5" stroke="#ffcf4d" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <circle cx="32" cy="32" r="12" fill="#f7d463"/>
+      <path d="M32 6v7M32 51v7M6 32h7M51 32h7M13.6 13.6l5 5M45.4 45.4l5 5M13.6 50.4l5-5M45.4 18.6l5-5" stroke="#f7d463" stroke-width="4.5" stroke-linecap="round" fill="none"/>
     </symbol>
     <symbol id="wx-partly" viewBox="0 0 64 64">
-      <circle cx="24" cy="24" r="9" fill="#ffcf4d"/>
-      <path d="M24 6v5M6 24h5M11.3 11.3l3.5 3.5M36.7 11.3l-3.5 3.5M11.3 36.7l3.5-3.5" stroke="#ffcf4d" stroke-width="4" stroke-linecap="round" fill="none"/>
-      <path d="M50 54H26a8.5 8.5 0 0 1-1-16.9A12.5 12.5 0 0 1 48 35a9.5 9.5 0 0 1 2 19z" fill="#e6ecfb"/>
+      <circle cx="24" cy="24" r="9" fill="#f7d463"/>
+      <path d="M24 6v5M6 24h5M11.3 11.3l3.5 3.5M36.7 11.3l-3.5 3.5M11.3 36.7l3.5-3.5" stroke="#f7d463" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M50 54H26a8.5 8.5 0 0 1-1-16.9A12.5 12.5 0 0 1 48 35a9.5 9.5 0 0 1 2 19z" fill="#f5f2e8"/>
     </symbol>
     <symbol id="wx-cloud" viewBox="0 0 64 64">
-      <path d="M47 48H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 27 10.5 10.5 0 0 1 47 48z" fill="#e6ecfb"/>
+      <path d="M47 48H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 27 10.5 10.5 0 0 1 47 48z" fill="#f5f2e8"/>
     </symbol>
     <symbol id="wx-rain" viewBox="0 0 64 64">
-      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#e6ecfb"/>
-      <path d="M22 46l-3 9M33 46l-3 9M44 46l-3 9" stroke="#62d4ff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#f5f2e8"/>
+      <path d="M22 46l-3 9M33 46l-3 9M44 46l-3 9" stroke="#8fd0ff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
     </symbol>
     <symbol id="wx-snow" viewBox="0 0 64 64">
-      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#e6ecfb"/>
-      <g fill="#bfe9ff"><circle cx="21" cy="49" r="3.2"/><circle cx="32" cy="55" r="3.2"/><circle cx="43" cy="49" r="3.2"/></g>
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#f5f2e8"/>
+      <g fill="#c9eaff"><circle cx="21" cy="49" r="3.2"/><circle cx="32" cy="55" r="3.2"/><circle cx="43" cy="49" r="3.2"/></g>
     </symbol>
     <symbol id="wx-storm" viewBox="0 0 64 64">
-      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#c3cce6"/>
-      <path d="M35 38l-9 13h7l-3 11 12-16h-7z" fill="#ffcf4d"/>
+      <path d="M47 40H19a9.5 9.5 0 0 1-1.2-18.9A14 14 0 0 1 44.7 19 10.5 10.5 0 0 1 47 40z" fill="#bfcdc3"/>
+      <path d="M35 38l-9 13h7l-3 11 12-16h-7z" fill="#f7d463"/>
     </symbol>
     <symbol id="wx-fog" viewBox="0 0 64 64">
-      <path d="M14 22h36M8 32h48M14 42h36M20 52h24" stroke="#aab6d8" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <path d="M14 22h36M8 32h48M14 42h36M20 52h24" stroke="#bfcdc3" stroke-width="4.5" stroke-linecap="round" fill="none"/>
     </symbol>
   </defs>
 </svg>
+<div id="fit">
 <div id="stage">
   <header class="top">
-    <div class="when">
-      <div class="clock" id="clock" aria-label="현재 시각"><span id="hh">--</span><span class="c">:</span><span id="mm">--</span></div>
-      <div class="date"><span class="md" id="dmd">-</span><span class="wd" id="dwd">-</span></div>
-    </div>
-    <div class="brand">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M6 26a5 5 0 0 1 5-5h7l26-13v44L18 39h-7a5 5 0 0 1-5-5z" fill="#ff7a59"/>
-        <path d="M14 42l4 15h9l-4-14z" fill="#ffb199"/>
-        <path d="M50 24c4 2.4 6 5.3 6 8.5S54 38.6 50 41" stroke="#ffcf4d" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-      </svg>
-      <span>스마트 알림판</span>
-      <span class="none-pill" id="noneNotice" hidden>공지 없음</span>
-    </div>
+    <div class="clock" id="clock" aria-label="현재 시각"><span id="hh">--</span><span class="c">:</span><span id="mm">--</span></div>
+    <div class="date"><span id="dmd">-</span><span class="wd" id="dwd"></span></div>
     <div class="wx" id="wx" hidden>
       <svg class="wxi" viewBox="0 0 64 64" aria-hidden="true"><use id="wxUse" href="#wx-sun"/></svg>
       <b class="now" id="wxNow"></b>
@@ -319,69 +251,71 @@ body.idle,body.idle *{cursor:none!important}
     </div>
   </header>
 
-  <section class="worship" id="worship">
-    <div class="wh"><b>아침 예배</b><span id="wTime"></span><span class="wp" id="w-pray" hidden>기도<strong></strong></span></div>
-    <div class="wb" id="wBody">
-      <div class="wcol" id="w-hymn" data-pager><i>찬송</i><b></b><span class="pg"></span><ul class="list wtext" id="w-hymn-text" data-every="25000"></ul></div>
-      <div class="wcol" id="w-bible" data-pager><i>성경</i><b></b><span class="pg"></span><ul class="list wtext" id="w-bible-text" data-every="25000"></ul></div>
-    </div>
-  </section>
-
-  <main class="days">
-    <section class="card today" id="card-today">
-      <div class="card-h">
-        <div class="dl"><b data-r="label">오늘</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
-        <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+  <div class="frame">
+    <section class="worship" id="worship">
+      <div class="wh"><b>아침 예배</b><span id="wTime"></span><span class="wp" id="w-pray" hidden>기도<strong></strong></span></div>
+      <div class="wb" id="wBody">
+        <div class="wcol" id="w-hymn" data-pager><i>찬송</i><b></b><span class="pg"></span><ul class="list wtext" id="w-hymn-text" data-every="25000"></ul></div>
+        <div class="wcol" id="w-bible" data-pager><i>성경</i><b></b><span class="pg"></span><ul class="list wtext" id="w-bible-text" data-every="25000"></ul></div>
       </div>
-      <ul class="list" id="list-today"></ul>
     </section>
-    <section class="card next" id="card-next" data-phase="next">
-      <div class="card-h">
-        <div class="dl hd-day"><b data-r="label">내일</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
-        <div class="dl hd-meal"><b id="mealLabel">중식</b><span id="mealSub"></span></div>
-        <div class="hd-r">
-          <div class="night hd-day" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg hd-day" data-r="pg"></span>
-          <span class="kcal hd-meal" id="mealKcal"></span>
-          <span class="rot" id="rot"></span>
+
+    <div class="bells" id="bells" hidden></div>
+
+    <main class="days">
+      <section class="day today" id="card-today" data-pager>
+        <div class="day-h">
+          <div class="dl"><b data-r="label">오늘</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
+          <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+        </div>
+        <ul class="list" id="list-today"></ul>
+      </section>
+      <section class="day next" id="card-next" data-pager>
+        <div class="day-h">
+          <div class="dl"><b data-r="label">내일</b><span data-r="sub"></span><em data-r="tag" hidden></em></div>
+          <div class="hd-r"><div class="night" data-r="night" hidden><i>자습감독</i><b></b></div><span class="pg" data-r="pg"></span></div>
+        </div>
+        <ul class="list" id="list-next"></ul>
+      </section>
+    </main>
+
+    <section class="notices" id="notices" data-pager hidden>
+      <div class="nl">공지</div>
+      <ul class="list" id="list-notice"></ul>
+      <span class="pg" id="pg-notice"></span>
+    </section>
+
+    <section class="info">
+      <div class="cell" id="cell-meal">
+        <h3><span class="tabs" id="mealTabs"></span><span id="mealWhen"></span><span class="sp"></span><span class="kcal" id="mealKcal"></span></h3>
+        <div class="menus">
+          <p class="menu" id="menu-lunch"></p>
+          <p class="menu" id="menu-dinner"></p>
+          <p class="none" id="mealNone" hidden>급식 정보가 없습니다</p>
         </div>
       </div>
-      <div class="panes">
-        <ul class="list pane on" id="list-next"></ul>
-        <ul class="list pane meal" id="list-lunch" data-pager></ul>
-        <ul class="list pane meal" id="list-dinner" data-pager></ul>
+      <div class="cell" id="cell-pray">
+        <h3><span id="weekTitle">이번 주 기도</span><span class="sp"></span><span class="dv" id="dvLine"></span></h3>
+        <div class="week" id="week"></div>
+      </div>
+      <div class="cell" id="cell-stu">
+        <h3>학생현황<span class="sp"></span><b id="stuTotal"></b></h3>
+        <div id="stuRows"></div>
       </div>
     </section>
-  </main>
-
-  <section class="notices" id="notices" hidden>
-    <div class="nl">공지</div>
-    <ul class="list" id="list-notice"></ul>
-    <span class="pg" id="pg-notice"></span>
-  </section>
-
-  <section class="info">
-    <div class="box dv" style="--c:var(--pray)" id="box-dv">
-      <h3>오늘의 예배</h3>
-      <div class="kvs"></div>
-    </div>
-    <div class="box" style="--c:var(--today)" id="box-week">
-      <h3 id="weekTitle">이번 주 기도</h3>
-      <div class="week" id="week"></div>
-    </div>
-    <div class="box" style="--c:var(--stu)" id="box-stu">
-      <h3>학생현황 <b id="stuTotal"></b></h3>
-      <div id="stuRows"></div>
-    </div>
-  </section>
+  </div>
 
   <footer class="status">
     <span class="dot" id="dot"></span><span id="stxt">불러오는 중…</span>
+    <button type="button" id="demoTime" hidden>수업 중(10:30) 화면 보기</button>
+    <button type="button" id="demoWorship" hidden>아침 예배 화면 보기</button>
     <span class="sp"></span>
     <span id="schoolCode"></span>
     <span class="cr">날씨 Open-Meteo · 급식 나이스 · 더블클릭: 전체 화면</span>
   </footer>
 
   <div class="overlay" id="overlay"><b>자료를 불러오는 중…</b></div>
+</div>
 </div>
 
 <script>
@@ -414,9 +348,15 @@ const WORSHIP = { from:"07:50", to:"07:55", days:[1, 2, 3, 4, 5] };
 const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 * 3600e3 };
 /* 급식: 나이스(NEIS) 교육정보 개방 포털. 인증키 없이 소량 조회한다. code 는 학교알리미 학교코드(화면 구석에 표시). */
 const SCHOOL = { name:"보성여자고등학교", office:"B10", code:"B100000447" };
-/* 한 시간마다 새로 받고, 내일 카드는 중식 5초·나머지(일정·석식) 10초씩 넘긴다.
+/* 한 시간마다 새로 받는다. 중식·석식이 둘 다 남아 있으면 급식 칸에서 rotate 마다 번갈아 보인다.
    lunchEnd 가 지나면 오늘 중식을, dinnerEnd 가 지나면 오늘 석식을 내리고 다음 급식일 것을 보인다. */
-const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3, lunchEnd:"12:00", dinnerEnd:"19:00" };
+const MEAL = { on:true, every:60 * 60e3, rotate:8e3, lunchEnd:"12:00", dinnerEnd:"19:00" };
+/* 일과 시각표: [이름, 시작, 끝]. 이름이 숫자로 시작하면 그 교시로 보고 일정의 "3교시" 표시와 맞춘다. 요일은 0=일 … 6=토.
+   from 부터 마지막 칸이 끝날 때까지 일과 줄을 보인다. 시각이 바뀌면 여기만 고친다. */
+const BELLS = { days:[1, 2, 3, 4, 5], from:"07:00", rows:[
+  ["1교시", "08:10", "09:00"], ["2교시", "09:10", "10:00"], ["3교시", "10:10", "11:00"], ["점심", "11:00", "12:00"],
+  ["4교시", "12:00", "12:50"], ["5교시", "13:00", "13:50"], ["6교시", "14:00", "14:50"], ["7교시", "15:00", "15:50"]
+] };
 const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
 const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
 const CACHE_KEY = "board:cache:v1";
@@ -481,10 +421,24 @@ function now(){
 }
 const hymnText = h => /^\d{1,3}$/.test(h) ? `${h}장` : (h || "");
 const toMin = v => { const [h, m] = v.split(":").map(Number); return h * 60 + m; };
+let forceWorship = Q.has("worship");          /* W 키(또는 예시 화면의 단추)로도 켜고 끈다 */
 function worshipNow(n){
-  if(Q.has("worship")) return true;
+  if(forceWorship) return true;
   const m = n.hh * 60 + n.mm;
   return WORSHIP.days.includes(dowOf(n.key)) && m >= toMin(WORSHIP.from) && m <= toMin(WORSHIP.to);
+}
+/* 일과가 지금 어디쯤인지. cur = 진행 중인 칸, soon = 곧 시작할 칸(쉬는 시간·등교 전), no = 지금 교시 번호, done = 끝난 마지막 교시 번호 */
+const BELL = BELLS.rows.map(([name, a, b]) => ({ name, a:toMin(a), b:toMin(b), no:/^\d/.test(name) ? parseInt(name, 10) : 0 }));
+function bellNow(n){
+  if(!BELL.length || !BELLS.days.includes(dowOf(n.key))) return null;
+  const m = n.hh * 60 + n.mm;
+  const cur = BELL.findIndex(x => m >= x.a && m < x.b);
+  return {
+    m, cur, soon:cur < 0 ? BELL.findIndex(x => m < x.a) : -1,
+    no:cur >= 0 ? BELL[cur].no : 0,
+    done:Math.max(0, ...BELL.filter(x => x.no && m >= x.b).map(x => x.no)),
+    show:m >= toMin(BELLS.from) && m < BELL[BELL.length - 1].b
+  };
 }
 const schoolYear = () => { const n = kstParts(); return n.m >= 3 ? n.y : n.y - 1; };
 const clockOf = ms => { const p = kstParts(ms); return `${pad(p.hh)}:${pad(p.mm)}`; };
@@ -804,6 +758,8 @@ function buildView(n){
   }
   const tomorrow = nx === addDays(t, 1);
   const today = dayView(t, "오늘", plan);
+  const bn = bellNow(n);
+  today.bell = bn ? { no:bn.no, done:bn.done } : null;        /* 교시가 바뀌면 오늘 칸을 다시 그린다 */
   const next = dayView(nx, tomorrow ? "내일" : `${WD[dowOf(nx)]}요일`, plan, tomorrow ? "" : "다음 등교일");
 
   const notices = (D.notice || []).filter(x => (!x.from || t >= x.from) && (!x.to || t <= x.to));
@@ -834,8 +790,10 @@ const last = {};                       /* 영역별 마지막 그린 내용 — 
 const pagers = new Map();
 const changed = (k, v) => { const s = JSON.stringify(v); if(last[k] === s) return false; last[k] = s; return true; };
 
-function evRow(g){
+function evRow(g, bell){
   const li = el("li", "ev");
+  const ps = bell ? [...new Set(g.vars.flatMap(v => v.periods))] : [];
+  if(ps.length && !ps.includes(bell.no) && Math.max(...ps) <= bell.done) li.classList.add("past");
   const name = g.dept || "기타";
   const chip = el("span", "chip" + (name.length >= 7 ? " l7" : name.length === 6 ? " l6" : name.length === 5 ? " l5" : ""), name);
   chip.style.cssText = tone(g.dept);
@@ -844,7 +802,7 @@ function evRow(g){
   const tags = [], seen = new Set();
   for(const v of g.vars){
     const l = varLabel(v);
-    if(l && !seen.has(l)){ seen.add(l); tags.push(el("i", "tg", l)); }
+    if(l && !seen.has(l)){ seen.add(l); tags.push(el("i", "tg" + (bell && bell.no && v.periods.includes(bell.no) ? " now" : ""), l)); }
   }
   /* 태그가 혼자 다음 줄로 떨어지지 않게 마지막 낱말과 첫 태그를 한 덩어리로 묶는다 */
   const m = g.text.match(/^([\s\S]*\s)?(\S+)$/);
@@ -873,18 +831,15 @@ function paintDay(slot, d, emptyMsg){
   }else nb.hidden = true;
   const list = $("#list-" + slot);
   list.replaceChildren();
-  if(d.groups.length) for(const g of d.groups) list.append(evRow(g));
+  if(d.groups.length) for(const g of d.groups) list.append(evRow(g, d.bell));
   else list.append(el("li", "empty", emptyMsg));
   return true;
 }
 
 function paintNotices(list){
   if(!changed("notices", list)) return false;
-  const box = $("#notices"), ul = $("#list-notice");
-  box.hidden = !list.length;
-  $("#noneNotice").hidden = list.length > 0 || !state.data.notice;
-  ul.replaceChildren();
-  for(const x of list) ul.append(el("li", "nt", x.text));
+  $("#notices").hidden = !list.length;
+  $("#list-notice").replaceChildren(...list.map(x => el("li", "nt", x.text)));
   return true;
 }
 
@@ -918,10 +873,38 @@ function paintWorship(w){
   return true;
 }
 
+/* 일과 줄. 보이고 안 보이는 것이 바뀌면 true (일정 칸 높이가 달라지므로 글자를 다시 맞춰야 한다) */
+function paintBells(n){
+  const b = bellNow(n), box = $("#bells"), on = !!(b && b.show);
+  if(!changed("bells", on ? [b.m, b.cur, b.soon] : null)) return false;
+  const was = box.hidden;
+  box.hidden = !on;
+  if(on){
+    const kids = [];
+    const seg = (cls, mins, ...inner) => { const e = el("div", "bell " + cls, ...inner); e.style.flexGrow = mins; return e; };
+    let at = BELL[0].a;
+    BELL.forEach((x, i) => {
+      if(x.a > at) kids.push(seg("gap", x.a - at));
+      const st = i === b.cur ? "now" : i === b.soon && x.a - b.m <= 30 ? "soon" : b.m >= x.b ? "past" : "";
+      const note = st === "now" ? `${x.b - b.m}분 남음` : st === "soon" ? `${x.a - b.m}분 뒤` : clockMin(x.a);
+      const e = seg((x.no ? "" : "rest ") + st, x.b - x.a, el("b", "", x.name), el("span", "", note));
+      if(st === "now") e.style.setProperty("--p", (b.m - x.a) / (x.b - x.a) * 100 + "%");
+      kids.push(e);
+      at = x.b;
+    });
+    box.replaceChildren(...kids);
+  }
+  return was !== box.hidden;
+}
+const clockMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+
 function paintDevotion(p){
   if(!changed("dv", p ? [p.hymn, p.bible] : null)) return false;
-  const kv = (label, val) => el("div", "kv" + (val ? "" : " dim"), el("i", "", label), el("b", "", val || "—"));
-  $("#box-dv .kvs").replaceChildren(kv("찬송", p && hymnText(p.hymn)), kv("성경", p && p.bible));
+  const line = $("#dvLine"), hymn = p && hymnText(p.hymn), bible = p && p.bible;
+  line.replaceChildren();
+  if(hymn) line.append("찬송 ", el("b", "", hymn));
+  if(hymn && bible) line.append(" · ");
+  if(bible) line.append("성경 ", el("b", "", bible));
   return true;
 }
 
@@ -933,13 +916,20 @@ function paintWeek(w, title){
   return true;
 }
 
+/* 학년 × 반 표: 반 번호 칸이 학년마다 같은 자리에 온다 */
 function paintRoster(r){
   if(!changed("roster", r)) return false;
   $("#stuTotal").textContent = r ? `${r.total}명` : "";
   const rows = $("#stuRows");
   rows.replaceChildren();
-  if(!r){ rows.append(el("div", "gr", el("span", "", "자료 없음"))); return true; }
-  for(const g of r.grades) rows.append(el("div", "gr", el("span", "", `${g.g}학년`), el("b", "", g.total), el("em", "", g.classes.map(c => c.n).join(" · "))));
+  if(!r){ rows.style.setProperty("--n", 1); rows.append(el("span", "g", "자료 없음")); return true; }
+  const n = Math.max(1, ...r.grades.map(g => g.classes.length));
+  rows.style.setProperty("--n", n);
+  for(const g of r.grades){
+    rows.append(el("span", "g", `${g.g}학년`));
+    for(let i = 0; i < n; i++) rows.append(el("span", "c", g.classes[i] ? g.classes[i].n : ""));
+    rows.append(el("b", "", g.total));
+  }
   return true;
 }
 
@@ -989,15 +979,13 @@ function fitLists(lists, max, min, noPage){
   const fs = sizes.length ? Math.min(...sizes) : max;
   for(const l of lists) applyFit(l, fs, noPage);
 }
-/* 오늘·내일 일정: 내일이 빽빽해도 오늘은 여유가 있으면 더 크게(내일의 DAY_RATIO 배까지) 쓴다. 내일이 오늘보다 커지지는 않는다. */
-const DAY_RATIO = 1.3;
+/* 오늘은 칸이 넓은 만큼 크게, 내일은 그보다 작게. 내일이 오늘보다 커지지는 않는다. */
 function fitDays(){
   const a = $("#list-today"), b = $("#list-next");
-  const sa = bestSize(a, 66, 38), sb = bestSize(b, 66, 38);
-  const fa = Math.min(sa == null ? 66 : sa, sb == null ? 66 : Math.round(sb * DAY_RATIO));
+  const sa = bestSize(a, 70, 40), sb = bestSize(b, 54, 34);
+  const fa = sa == null ? 70 : sa;
   applyFit(a, fa);
-  applyFit(b, Math.min(sb == null ? 66 : sb, fa));
-  return sa == null ? null : fa;
+  applyFit(b, Math.min(sb == null ? 54 : sb, fa));
 }
 function showPage(listEl, p){
   p.pages.forEach((arr, i) => arr.forEach(li => { li.hidden = i !== p.i; }));
@@ -1021,25 +1009,18 @@ function fitWidthAll(nodes, max, min, room = 1){
   for(const n of nodes) n.style.fontSize = fs + "px";
 }
 function fitAll(){
-  const stage = $("#stage"), cp = stage.classList.contains("compact");
-  const notice = $("#list-notice");
-  fitLists([notice], 56, 38);                     /* 공지가 차지하는 높이가 정해져야 카드 높이도 정해진다 */
-  const day = fitDays();
-  if(day && !$("#notices").hidden && parseFloat(notice.style.getPropertyValue("--fs")) > day){
-    applyFit(notice, Math.max(38, day));          /* 공지가 오늘 일정보다 크지 않게 줄이고, 그만큼 늘어난 카드에 다시 맞춘다 */
-    fitDays();
-  }
-  fitLists([$("#list-lunch")], 66, 38);          /* 식단은 칸마다 따로 */
-  fitLists([$("#list-dinner")], 66, 38);
-  fitWidthAll([...document.querySelectorAll("#week .n")], cp ? 40 : 52, 22, .92);
-  fitWidthAll([...document.querySelectorAll("#box-dv .kv b")], cp ? 44 : 58, 26);
-  fitWidthAll([...document.querySelectorAll("#stuRows em")], cp ? 21 : 27, 14);      /* 반이 많은 학년도 끝 반까지 보이게 */
-  if(stage.classList.contains("worship-on")){
+  fitLists([$("#list-notice")], 44, 32);          /* 공지 띠 높이가 정해져야 일정 칸 높이도 정해진다 */
+  fitDays();
+  fitLists([$("#menu-lunch")], 42, 22, true);     /* 식단은 쪽으로 나누지 않고 한 칸에 */
+  fitLists([$("#menu-dinner")], 42, 22, true);
+  fitWidthAll([...document.querySelectorAll("#week .n")], 44, 20, .92);
+  fitWidth($("#dvLine"), 30, 18);
+  if($("#stage").classList.contains("worship-on")){
     const hText = $("#w-hymn").classList.contains("has-text"), bText = $("#w-bible").classList.contains("has-text");
-    fitWidth($("#w-hymn b"), hText ? (cp ? 90 : 120) : (cp ? 300 : 340), 60);       /* 머리(번호)를 먼저 맞춰야 글이 들어갈 높이가 정해진다 */
-    fitWidth($("#w-bible b"), bText ? (cp ? 76 : 100) : (cp ? 170 : 200), 44);
-    fitLists([$("#w-hymn-text")], cp ? 52 : 62, 16, true);                 /* 가사·본문은 각자 가장 큰 글자로 */
-    fitLists([$("#w-bible-text")], cp ? 52 : 62, cp ? 36 : 40);
+    fitWidth($("#w-hymn b"), hText ? 120 : 340, 60);       /* 머리(번호)를 먼저 맞춰야 글이 들어갈 높이가 정해진다 */
+    fitWidth($("#w-bible b"), bText ? 100 : 200, 44);
+    fitLists([$("#w-hymn-text")], 62, 16, true);            /* 가사·본문은 각자 가장 큰 글자로 */
+    fitLists([$("#w-bible-text")], 62, 40);
   }
 }
 
@@ -1099,7 +1080,7 @@ function render(){
 }
 
 /* ============ 시계 · 배치 ============ */
-let dayKey = "", reloading = false, lastWorship = null, lastMeal = null;
+let dayKey = "", reloading = false, lastWorship = null, lastMeal = null, lastBell = "";
 /* 하루 한 번, 새벽에 통째로 다시 열어 오래 켜 둔 화면을 깨끗이 한다. 인터넷이 안 될 때 다시 열면 오류 화면이 뜨므로 그땐 건너뛴다. */
 async function nightlyReload(){
   if(reloading) return;
@@ -1124,27 +1105,32 @@ function tickBody(){
   $("#dmd").textContent = `${n.m}월 ${n.d}일`;
   wd.textContent = `${WD[dowOf(n.key)]}요일`;
   wd.className = "wd" + (dowOf(n.key) === 6 ? " sat" : dowOf(n.key) === 0 ? " sun" : "");
-  const wOn = worshipNow(n), ms = mealStage(n);
-  if(n.key !== dayKey || wOn !== lastWorship || ms !== lastMeal){
+  const wOn = worshipNow(n), ms = mealStage(n), bn = bellNow(n), bk = bn ? `${bn.no}/${bn.done}` : "";
+  const bellsMoved = paintBells(n);
+  if(n.key !== dayKey || wOn !== lastWorship || ms !== lastMeal || bk !== lastBell){
     const newDay = n.key !== dayKey, mealTurn = lastMeal != null && ms !== lastMeal;      /* 끼니 때가 지나면 다음 급식을 받아 온다 */
     if(newDay) ensureWord();
     if(!state.demo && MEAL.on && ((newDay && dayKey) || mealTurn)) fetchMeal();
-    dayKey = n.key; lastWorship = wOn; lastMeal = ms; render();
+    dayKey = n.key; lastWorship = wOn; lastMeal = ms; lastBell = bk; render();
   }
+  if(bellsMoved) fitAll();
   else if(n.ss === 0) paintStatus();
   if(n.hh === 3 && n.mm === 30 && performance.now() > 6 * 3600e3 && !FAKE.date && !FAKE.time) nightlyReload();
 }
 
+/* 기준은 1920 × 1080. 화면 비율에 따라 높이(900~1240)나 너비(~2560)를 늘려 칸을 채우고, 그래도 남으면 가운데에 둔다. */
 function layout(){
-  const stage = $("#stage"), vw = innerWidth, vh = innerHeight;
-  const portrait = vh > vw * 1.05;
-  const baseW = portrait ? 1080 : 1920, baseH = portrait ? 1500 : 760;
-  const k = Math.min(vw / baseW, vh / baseH);
-  stage.style.width = vw / k + "px";
-  stage.style.height = vh / k + "px";
-  stage.style.transform = `scale(${k})`;
-  stage.classList.toggle("portrait", portrait);
-  stage.classList.toggle("compact", !portrait && vh / k < 900);
+  const fit = $("#fit"), stage = $("#stage"), cs = getComputedStyle(fit);
+  const pl = parseFloat(cs.paddingLeft) || 0, pt = parseFloat(cs.paddingTop) || 0;
+  const vw = fit.clientWidth - pl - (parseFloat(cs.paddingRight) || 0), vh = fit.clientHeight - pt - (parseFloat(cs.paddingBottom) || 0);
+  if(vw <= 0 || vh <= 0) return;
+  const ratio = vw / vh;
+  const W = ratio > 1920 / 900 ? Math.min(2560, 900 * ratio) : 1920;
+  const H = ratio > 1920 / 900 ? 900 : Math.min(1240, 1920 / ratio);
+  const k = Math.min(vw / W, vh / H);
+  stage.style.width = W + "px";
+  stage.style.height = H + "px";
+  stage.style.transform = `translate(${pl + (vw - W * k) / 2}px,${pt + (vh - H * k) / 2}px) scale(${k})`;
   fitAll();
 }
 
@@ -1320,55 +1306,41 @@ function mealFor(m){
 function paintMeal(raw){
   const m = mealFor(raw);
   if(!changed("meal", m)) return false;
-  for(const [slot, id] of [["lunch", "#list-lunch"], ["dinner", "#list-dinner"]]){
-    const ul = $(id), x = m && m[slot];
-    ul.replaceChildren(...(x ? x.dishes.map(d => el("li", "dish", d)) : []));
-    ul.style.gridTemplateRows = x ? `repeat(${Math.ceil(x.dishes.length / 2)},auto)` : "";   /* 두 줄로, 위에서 아래로 읽는다 */
+  for(const slot of ["lunch", "dinner"]){
+    const x = m && m[slot];
+    $("#menu-" + slot).replaceChildren(...(x ? x.dishes.map(d => el("span", "dish", d)) : []));
   }
   rotSync();
   return true;
 }
 
-/* ── 내일 카드 돌리기: 내일 일정 → 중식 → 석식 ── */
-const rot = { phases:["next"], i:0, t:Date.now() };
+/* ── 급식 칸: 남은 끼니가 둘이면 중식 ↔ 석식을 번갈아 보인다 ── */
+const rot = { phases:[], i:0, t:Date.now() };
 function rotSync(){
-  const m = mealFor(state.meal);
-  const ph = ["next"];
+  const m = mealFor(state.meal), ph = [];
   if(m && m.lunch) ph.push("lunch");
   if(m && m.dinner) ph.push("dinner");
-  const cur = rot.phases[rot.i];
+  const cur = rot.phases[rot.i], t = now().key;
   rot.phases = ph;
   rot.i = Math.max(0, ph.indexOf(cur));
-  $("#rot").replaceChildren(...(ph.length > 1 ? ph.map(() => el("i", "")) : []));
-  setPhase(rot.phases[rot.i]);
+  $("#mealTabs").replaceChildren(...(ph.length ? ph.map(p => el("span", "tab", p === "lunch" ? "중식" : "석식")) : [el("span", "tab", "급식")]));
+  $("#mealWhen").textContent = !ph.length ? "" : m.date === t ? "오늘" : m.date === addDays(t, 1) ? "내일" : `${mdOf(m.date)} (${WD[dowOf(m.date)]})`;
+  $("#mealNone").hidden = ph.length > 0;
+  setPhase();
 }
-function setPhase(ph){
-  const card = $("#card-next");
-  card.dataset.phase = ph;
-  $("#list-next").classList.toggle("on", ph === "next");
-  $("#list-lunch").classList.toggle("on", ph === "lunch");
-  $("#list-dinner").classList.toggle("on", ph === "dinner");
-  [...$("#rot").children].forEach((d, i) => d.classList.toggle("on", i === rot.i));
-  if(ph === "next"){
-    const p = pagers.get($("#list-next"));        /* 일정으로 돌아오면 첫 쪽부터 */
-    if(p && p.i){ p.i = 0; p.t = Date.now(); showPage($("#list-next"), p); }
-    return;
-  }
+function setPhase(){
+  const ph = rot.phases[rot.i] || "";
+  $("#menu-lunch").classList.toggle("on", ph === "lunch");
+  $("#menu-dinner").classList.toggle("on", ph === "dinner");
+  [...$("#mealTabs").children].forEach((d, i) => d.classList.toggle("on", i === rot.i));
   const m = mealFor(state.meal), x = m && m[ph];
-  const t = now().key;
-  $("#mealLabel").textContent = ph === "lunch" ? "중식" : "석식";
-  $("#mealSub").textContent = !m ? "" : m.date === t ? "오늘 급식" : m.date === addDays(t, 1) ? "내일 급식" : `${WD[dowOf(m.date)]}요일 ${mdOf(m.date)} 급식`;
   $("#mealKcal").textContent = x && x.kcal ? `${x.kcal} kcal` : "";
 }
 function rotTick(){
-  if(rot.phases.length < 2) return;
-  const ph = rot.phases[rot.i];
-  const p = ph === "next" && pagers.get($("#list-next"));
-  const dwell = p ? Math.max(MEAL.rotate, p.pages.length * p.every) : ph === "lunch" ? MEAL.lunch : MEAL.rotate;   /* 일정이 여러 쪽이면 다 보일 때까지 */
-  if(Date.now() - rot.t < dwell - 50) return;
+  if(rot.phases.length < 2 || Date.now() - rot.t < MEAL.rotate - 50) return;
   rot.t = Date.now();
   rot.i = (rot.i + 1) % rot.phases.length;
-  setPhase(rot.phases[rot.i]);
+  setPhase();
 }
 
 /* ============ 불러오기 ============ */
@@ -1435,7 +1407,16 @@ const toggleFullscreen = () => {
   else document.documentElement.requestFullscreen().catch(() => {});
 };
 addEventListener("dblclick", toggleFullscreen);
-addEventListener("keydown", e => { if(e.key === "f" || e.key === "F") toggleFullscreen(); });
+const toggleWorship = () => { forceWorship = !forceWorship; $("#demoWorship").textContent = forceWorship ? "평소 화면으로" : "아침 예배 화면 보기"; tickBody(); };
+addEventListener("keydown", e => {
+  if(e.key === "f" || e.key === "F") toggleFullscreen();
+  if(e.key === "w" || e.key === "W") toggleWorship();
+});
+$("#demoWorship").addEventListener("click", toggleWorship);
+/* 예시 화면에서만 보이는 단추: 시각을 10:30 에 세워 일과 줄과 '지금 교시' 표시를 미리 본다 */
+const toggleTime = () => { FAKE.time = FAKE.time ? null : "10:30"; $("#demoTime").textContent = FAKE.time ? "지금 시각으로" : "수업 중(10:30) 화면 보기"; tickBody(); };
+$("#demoTime").addEventListener("click", toggleTime);
+for(const b of document.querySelectorAll(".status button")) b.addEventListener("dblclick", e => e.stopPropagation());
 document.addEventListener("visibilitychange", () => {
   if(document.visibilityState !== "visible") return;
   keepAwake();
@@ -1454,12 +1435,13 @@ setInterval(() => {
 
 wake(); keepAwake();
 $("#schoolCode").textContent = SCHOOL.code ? `학교코드 ${SCHOOL.code}` : "";
-for(const c of document.querySelectorAll(".card")) c.dataset.pager = "";
-$("#notices").dataset.pager = "";
 layout();
 tick();
-if(Q.has("demo")){
+if(Q.has("demo") || window.BOARD_DEMO){
   state.demo = true;
+  $("#demoWorship").hidden = false;
+  $("#demoTime").hidden = false;
+  if(FAKE.time) $("#demoTime").textContent = "지금 시각으로";
   state.data = demoData();
   state.wx = { t:18, code:2, hi:22, lo:11, pop:20, at:Date.now() };
   words["430|요한복음 8:12"] = {
@@ -1467,7 +1449,7 @@ if(Q.has("demo")){
     lyrics:[1, 2, 3].map(i => ({ n:String(i), t:`예시 가사 ${i}절입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 가사이며 실제 가사는 시트의 찬송가 가사 탭에서 불러옵니다.` })),
     verses:[{ n:"12", t:"예시 본문입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 문장이며 실제 본문은 시트의 성경 말씀 탭에서 불러옵니다." }]
   };
-  state.meal = { date:now().key, at:Date.now(),
+  state.meal = { date:mealStage(now()) >= 2 ? addDays(now().key, 1) : now().key, at:Date.now(),
     lunch:{ dishes:["현미밥", "쇠고기미역국", "닭갈비", "도토리묵무침", "배추김치", "요구르트"], kcal:812 },
     dinner:{ dishes:["카레라이스", "유부장국", "돈가스", "양배추샐러드", "깍두기"], kcal:905 } };
   render();
