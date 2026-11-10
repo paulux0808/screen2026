@@ -412,7 +412,9 @@ const WORSHIP = { from:"07:50", to:"07:55", days:[1, 2, 3, 4, 5] };
 const WEATHER = { on:true, lat:37.5665, lon:126.9780, every:30 * 60e3, stale:3 * 3600e3 };
 /* 급식: 나이스(NEIS) 교육정보 개방 포털. 인증키 없이 소량 조회한다. code 는 학교알리미 학교코드(화면 구석에 표시). */
 const SCHOOL = { name:"보성여자고등학교", office:"B10", code:"B100000447" };
-const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3 };     /* 한 시간마다 새로 받고, 내일 카드는 중식 5초·나머지(일정·석식) 10초씩 넘긴다 */
+/* 한 시간마다 새로 받고, 내일 카드는 중식 5초·나머지(일정·석식) 10초씩 넘긴다.
+   lunchEnd 가 지나면 오늘 중식을, dinnerEnd 가 지나면 오늘 석식을 내리고 다음 급식일 것을 보인다. */
+const MEAL = { on:true, every:60 * 60e3, rotate:10e3, lunch:5e3, lunchEnd:"13:30", dinnerEnd:"19:00" };
 const POLL_MS = 5 * 60e3, RETRY_MS = [15e3, 30e3, 60e3], TIMEOUT_MS = 15e3;
 const PAGE_MS = 9e3, STALE_MS = 15 * 60e3;
 const CACHE_KEY = "board:cache:v1";
@@ -740,7 +742,7 @@ const nextWeekday = k => { let d = addDays(k, 1); while([0, 6].includes(dowOf(d)
 function groupItems(items){
   const out = [], idx = new Map();
   for(const it of items){
-    const k = [it.dept, it.cat, it.text].join("\u0001");
+    const k = itemKey(it);
     let g = idx.get(k);
     if(!g){ g = { dept:it.dept, cat:it.cat, text:it.text, vars:[] }; idx.set(k, g); out.push(g); }
     const v = { grades:it.grades, periods:it.periods, until:it.until };
@@ -762,12 +764,29 @@ function varLabel(v){
   return out.join(" ");
 }
 
+/* "(~13일)" 처럼 끝나는 날이 적힌 일정은 시작한 날에만 적혀 있어도 끝나는 날까지 날마다 보인다.
+   그날 칸에 같은 부서·같은 이름의 일정이 이미 적혀 있으면 겹쳐 싣지 않는다. */
+const CARRY_DAYS = 45;
+const itemKey = it => [it.dept, it.cat, it.text].join("\u0001");
+function itemsOn(plan, k){
+  const by = plan.byDate || {}, own = by[k] || [], out = [...own];
+  const seen = new Set(own.map(itemKey)), from = addDays(k, -CARRY_DAYS);
+  for(const d of Object.keys(by).sort()){
+    if(d < from || d >= k) continue;
+    for(const it of by[d]){
+      if(!it.until || it.until < k || seen.has(itemKey(it))) continue;
+      seen.add(itemKey(it)); out.push(it);
+    }
+  }
+  return out;
+}
+
 function dayView(k, label, plan, extra){
   return {
     key:k, label,
     sub:extra ? mdOf(k) : `${mdOf(k)} (${WD[dowOf(k)]})`,
     tag:extra || "",
-    groups:groupItems((plan.byDate && plan.byDate[k]) || []),
+    groups:groupItems(itemsOn(plan, k)),
     night:(state.data.night && state.data.night[k]) || ""
   };
 }
@@ -1062,7 +1081,7 @@ function render(){
 }
 
 /* ============ 시계 · 배치 ============ */
-let dayKey = "", reloading = false, lastWorship = null;
+let dayKey = "", reloading = false, lastWorship = null, lastMeal = null;
 /* 하루 한 번, 새벽에 통째로 다시 열어 오래 켜 둔 화면을 깨끗이 한다. 인터넷이 안 될 때 다시 열면 오류 화면이 뜨므로 그땐 건너뛴다. */
 async function nightlyReload(){
   if(reloading) return;
@@ -1087,8 +1106,13 @@ function tickBody(){
   $("#dmd").textContent = `${n.m}월 ${n.d}일`;
   wd.textContent = `${WD[dowOf(n.key)]}요일`;
   wd.className = "wd" + (dowOf(n.key) === 6 ? " sat" : dowOf(n.key) === 0 ? " sun" : "");
-  const wOn = worshipNow(n);
-  if(n.key !== dayKey || wOn !== lastWorship){ if(n.key !== dayKey){ ensureWord(); if(dayKey && !state.demo) fetchMeal(); } dayKey = n.key; lastWorship = wOn; render(); }
+  const wOn = worshipNow(n), ms = mealStage(n);
+  if(n.key !== dayKey || wOn !== lastWorship || ms !== lastMeal){
+    const newDay = n.key !== dayKey, mealTurn = lastMeal != null && ms !== lastMeal;      /* 끼니 때가 지나면 다음 급식을 받아 온다 */
+    if(newDay) ensureWord();
+    if(!state.demo && MEAL.on && ((newDay && dayKey) || mealTurn)) fetchMeal();
+    dayKey = n.key; lastWorship = wOn; lastMeal = ms; render();
+  }
   else if(n.ss === 0) paintStatus();
   if(n.hh === 3 && n.mm === 30 && performance.now() > 6 * 3600e3 && !FAKE.date && !FAKE.time) nightlyReload();
 }
@@ -1226,6 +1250,8 @@ async function neis(service, params){
     return (body.find(x => x.row) || {}).row || [];
   }finally{ clearTimeout(kill); }
 }
+/* 0: 점심 전 · 1: 점심 뒤 · 2: 저녁 뒤 */
+const mealStage = n => { const m = n.hh * 60 + n.mm; return m >= toMin(MEAL.dinnerEnd) ? 2 : m >= toMin(MEAL.lunchEnd) ? 1 : 0; };
 const ymdOf = k => k.replace(/-/g, "");
 const keyOfYmd = y => `${y.slice(0, 4)}-${y.slice(4, 6)}-${y.slice(6, 8)}`;
 /* "현미밥(5.)<br/>쇠고기미역국 (5.6.16.)" → ["현미밥", "쇠고기미역국"] */
@@ -1248,9 +1274,10 @@ let mealTimer = null;
 async function fetchMeal(){
   clearTimeout(mealTimer);
   try{
-    const sd = await schoolCode(), t = now().key;
-    let rows = await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_YMD:ymdOf(t) });
-    if(!rows.length) rows = await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_FROM_YMD:ymdOf(addDays(t, 1)), MLSV_TO_YMD:ymdOf(addDays(t, 14)) });
+    const sd = await schoolCode(), n = now(), t = n.key, st = mealStage(n);
+    const left = r => { const nm = String(r.MMEAL_SC_NM || ""); return (st < 1 && nm.includes("중식")) || (st < 2 && nm.includes("석식")); };
+    let rows = st < 2 ? await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_YMD:ymdOf(t) }) : [];
+    if(!rows.some(left)) rows = await neis("mealServiceDietInfo", { SD_SCHUL_CODE:sd, MLSV_FROM_YMD:ymdOf(addDays(t, 1)), MLSV_TO_YMD:ymdOf(addDays(t, 14)) });
     const day = rows.map(r => String(r.MLSV_YMD || "")).filter(y => /^\d{8}$/.test(y)).sort()[0];
     const pick = name => {
       const r = rows.find(x => x.MLSV_YMD === day && String(x.MMEAL_SC_NM || "").includes(name));
@@ -1264,8 +1291,14 @@ async function fetchMeal(){
   }catch(e){ console.warn("meal", e && e.message); }
   finally{ try{ render(); }catch(e){ console.error(e); } mealTimer = setTimeout(fetchMeal, MEAL.every); }
 }
-/* 지난 날짜의 저장본은 쓰지 않는다 */
-const mealFor = m => m && m.date >= now().key ? m : null;
+/* 지난 날짜의 저장본은 쓰지 않고, 오늘 것이라도 이미 지난 끼니는 내린다 */
+function mealFor(m){
+  const n = now();
+  if(!m || m.date < n.key) return null;
+  if(m.date > n.key) return m;
+  const st = mealStage(n);
+  return st ? { ...m, lunch:null, dinner:st >= 2 ? null : m.dinner } : m;
+}
 function paintMeal(raw){
   const m = mealFor(raw);
   if(!changed("meal", m)) return false;
@@ -1350,6 +1383,7 @@ function demoData(){
   const n = now(), t = n.key, nx = nextWeekday(t);
   const plan = { byDate:{}, dates:[] };
   const put = (k, lines) => { plan.dates.push(k); plan.byDate[k] = lines.map(s => parseItem(s, k)); };
+  put(addDays(t, -1), [`[상담부]학부모 상담 주간(~${parts(addDays(t, 3))[2]}일)`]);     /* 어제 시작해 며칠 이어지는 일정 */
   put(t, ["[교목부]목요예배", "[1학년부]안전교육(①,7)", "[교무부]교직원 협의회 (14:30)"]);
   put(nx, [
     "[연구부]수업 공개의 날(①②,3~4)", "[3학년부]진로 특강(③,6,7)", "[교무부]중간고사 감독 교사 연수(7)",
@@ -1415,7 +1449,7 @@ if(Q.has("demo")){
     lyrics:[1, 2, 3].map(i => ({ n:String(i), t:`예시 가사 ${i}절입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 가사이며 실제 가사는 시트의 찬송가 가사 탭에서 불러옵니다.` })),
     verses:[{ n:"12", t:"예시 본문입니다. 이 글은 화면 모양을 보여 주기 위한 가짜 문장이며 실제 본문은 시트의 성경 말씀 탭에서 불러옵니다." }]
   };
-  state.meal = { date:state.data.plan.dates[0], at:Date.now(),
+  state.meal = { date:now().key, at:Date.now(),
     lunch:{ dishes:["현미밥", "쇠고기미역국", "닭갈비", "도토리묵무침", "배추김치", "요구르트"], kcal:812 },
     dinner:{ dishes:["카레라이스", "유부장국", "돈가스", "양배추샐러드", "깍두기"], kcal:905 } };
   render();
