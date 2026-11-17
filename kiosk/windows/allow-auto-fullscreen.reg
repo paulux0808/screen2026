@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; screen2026 board: let https://paulux0808.github.io enter fullscreen WITHOUT a click
+; in Google Chrome and Microsoft Edge, for every user of this PC (needs administrator).
+; After applying, close every Chrome/Edge window once (or restart the PC).
+; Check: open chrome://policy (or edge://policy) and look for AutomaticFullscreenAllowedForUrls.
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]
+"1"="https://paulux0808.github.io"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\AutomaticFullscreenAllowedForUrls]
+"1"="https://paulux0808.github.io"
