@@ -1,0 +1,18 @@
+# 올릴 때마다 알림판을 실제 브라우저로 열어 점검한다 (tests/smoke.cjs)
+name: check
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-package-lock playwright@1.49.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/smoke.cjs
