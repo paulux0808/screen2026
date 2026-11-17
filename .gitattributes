@@ -4,3 +4,4 @@
 # 셸 스크립트는 LF
 *.sh text eol=lf
 *.command text eol=lf
+*.ps1 -text

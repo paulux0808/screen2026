@@ -254,19 +254,33 @@ const read = page => page.evaluate(() => {
   ok(!v.overlay && v.today.length >= 4 && v.next.length >= 5, "예시 자료가 그려진다");
   await page.close();
 
-  /* ── 8. 창 모드: 전체화면 안내 ── */
+  /* ── 8. 창 모드: 안내 없이, 첫 클릭·키에 전체화면을 청한다 ── */
   console.log("창 모드 (브라우저 창이 화면보다 작음)");
   await ctx.close();
   ctx = await newCtx({ viewport:{ width:1600, height:860 }, screen:{ width:1920, height:1080 } });
   await mock(ctx, net);
+  await ctx.addInitScript(() => {
+    window.__fsCalls = 0;
+    const orig = Element.prototype.requestFullscreen;
+    Element.prototype.requestFullscreen = function(...a){ window.__fsCalls++; return orig.apply(this, a); };
+  });
   page = await open(ctx, "?date=2026-11-17&time=10:30", 1200);
-  const hint = await page.evaluate(() => getComputedStyle(document.querySelector("#fsHint")).display !== "none" && document.body.classList.contains("fs-need"));
+  const atLoad = await page.evaluate(() => window.__fsCalls);
+  const floating = await page.evaluate(() => [...document.querySelectorAll("body *")].filter(e => {
+    const cs = getComputedStyle(e);
+    return (cs.position === "absolute" || cs.position === "fixed") && e.offsetParent !== null && !["fit", "stage"].includes(e.id)
+      && !e.closest(".toast.hide") && !e.closest(".overlay[hidden]") && e.getBoundingClientRect().width > 0 && !e.closest("svg");
+  }).map(e => e.id || e.className));
   await shot(page, "3-window");
-  ok(hint, "자동 전체화면이 막히면 안내가 보인다");
+  ok(atLoad >= 1, "열자마자 전체화면을 청한다");
+  ok(!floating.length, "화면 위에 떠 있는 안내가 없다" + (floating.length ? " — " + floating.join(", ") : ""));
   await page.mouse.click(800, 400);
-  await page.waitForTimeout(600);
-  const afterClick = await page.evaluate(() => !!document.fullscreenElement || !document.body.classList.contains("fs-need"));
-  ok(afterClick, "화면을 한 번 누르면 전체화면을 청한다");
+  await page.waitForTimeout(300);
+  const afterClick = await page.evaluate(() => window.__fsCalls);
+  ok(afterClick > atLoad, "화면을 한 번 누르면 전체화면을 청한다");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.__fsCalls) >= afterClick, "리모컨 확인(Enter) 키로도 청한다");
   await page.close();
   await ctx.close();
 

@@ -243,19 +243,6 @@ body.idle .ctrl{opacity:0;pointer-events:none}                         /* 아무
 .status button:hover{background:rgba(246,244,236,.2);border-color:var(--chalk-2)}
 .status button:focus-visible{outline:3px solid var(--today);outline-offset:2px}
 
-/* 전체화면 안내: 브라우저가 자동 전체화면을 막았을 때만. 연 직후 잠깐과 마우스를 움직이는 동안에만 보이고, 아무도 없는 화면에서는 사라진다 */
-.fs-hint{
-  position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:4;
-  display:none;align-items:center;gap:16px;padding:12px 16px 12px 26px;border-radius:999px;
-  background:rgba(15,31,24,.95);border:2px solid var(--today);box-shadow:0 10px 32px rgba(0,0,0,.55);
-  font-size:25px;font-weight:800;white-space:nowrap;cursor:pointer;transition:opacity .35s ease;
-}
-.fs-hint .act{background:var(--today);color:var(--today-ink);font-weight:900;padding:4px 16px;border-radius:999px;font-size:23px}
-.fs-hint button{font:inherit;font-size:26px;color:var(--chalk-3);background:transparent;border:0;padding:0 8px;cursor:pointer;line-height:1}
-.fs-hint button:hover{color:var(--chalk)}
-body.fs-need .fs-hint{display:flex}
-body.fs-need.idle:not(.fs-fresh) .fs-hint{opacity:0;pointer-events:none}
-
 .toast{
   position:absolute;left:50%;top:24px;transform:translateX(-50%);z-index:6;pointer-events:none;
   padding:10px 26px;border-radius:999px;background:rgba(15,31,24,.95);border:1.5px solid var(--today);
@@ -271,7 +258,7 @@ body.fs-need.idle:not(.fs-fresh) .fs-hint{opacity:0;pointer-events:none}
 
 @media (prefers-reduced-motion:reduce){
   .clock .c,.list.flip{animation:none}
-  .menu,.menu.on,.tab,.bell,.toast,.fs-hint,.ctrl{transition:none}
+  .menu,.menu.on,.tab,.bell,.toast,.ctrl{transition:none}
 }
 </style>
 </head>
@@ -391,10 +378,6 @@ body.fs-need.idle:not(.fs-fresh) .fs-hint{opacity:0;pointer-events:none}
     </div>
   </footer>
 
-  <div class="fs-hint" id="fsHint" role="button" tabindex="0">
-    <span>화면을 한 번 누르면 전체화면이 됩니다</span><span class="act">전체화면</span>
-    <button type="button" id="fsHintClose" aria-label="안내 닫기" title="창으로 두기">✕</button>
-  </div>
   <div class="toast hide" id="toast" role="status" aria-live="polite"></div>
   <div class="overlay" id="overlay"><b>자료를 불러오는 중…</b></div>
 </div>
@@ -1455,10 +1438,10 @@ async function softReload(quiet){
   웹 페이지는 사람이 누르기 전에는 스스로 전체화면이 될 수 없다(브라우저 보안 규칙). 그래서 세 겹으로 한다.
     ① 키오스크 실행: kiosk/ 폴더의 실행 파일로 브라우저를 키오스크(전체화면) 창으로 띄운다. 창 자체가 전체화면이라 이 코드는 할 일이 없다.
     ② 자동 전체화면 허용 정책: kiosk/ 의 정책 파일로 이 주소에 '누르지 않아도 전체화면'을 허용하면, 아래 enterFs() 가 열자마자 성공한다.
-    ③ 둘 다 없으면: 화면을 처음 누르거나(마우스·터치) 키를 누르는 순간 전체화면으로 바꾼다. 그때까지 안내를 잠깐 보인다.
+    ③ 둘 다 없으면: 화면을 처음 누르거나(마우스·터치) 키를 누르는 순간 전체화면으로 바꾼다. 화면에 안내는 띄우지 않는다.
   사람이 Esc 로 전체화면을 끄면 그 뜻을 따르되, 10분 동안 아무도 만지지 않으면 다시 전체화면을 바란다(②가 있으면 저절로 돌아간다).
 */
-const FS = { want:true, wasDoc:false, enteredAt:0, granted:false, blocked:false, touchedAt:Date.now() };
+const FS = { want:true, wasDoc:false, enteredAt:0, granted:false, touchedAt:Date.now() };
 const fsMedia = window.matchMedia ? matchMedia("(display-mode: fullscreen)") : { matches:false };
 const docFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
 /* 창 자체가 전체화면인가 (키오스크 · F11 · 전체화면 앱). 화면 확대 비율이 100% 가 아니어도 알아본다 */
@@ -1480,14 +1463,14 @@ function requestFs(){
     return p && typeof p.then === "function" ? p : Promise.resolve();
   }catch(e){ return Promise.reject(e); }
 }
-/* 전체화면을 청한다. 막히면 안내를 띄울 수 있게 표시해 둔다.
+/* 전체화면을 청한다.
    정책으로 허용된 브라우저도 전체화면이 풀린 직후(페이지를 새로 열 때 등) 몇 초는 거절하므로, 그때는 간격을 늘려 가며 다시 청한다 */
 let fsRetry = null, fsRetryDelay = 1000;
 function enterFs(){
   clearTimeout(fsRetry);
   if(!FS.want || isFs()){ fsRetryDelay = 1000; return Promise.resolve(syncFs()); }
-  return requestFs().then(() => { FS.blocked = false; fsRetryDelay = 1000; syncFs(); }, () => {
-    FS.blocked = true; syncFs();
+  return requestFs().then(() => { fsRetryDelay = 1000; syncFs(); }, () => {
+    syncFs();
     if(FS.granted){ fsRetry = setTimeout(enterFs, fsRetryDelay); fsRetryDelay = Math.min(fsRetryDelay * 2, 15e3); }
   });
 }
@@ -1502,7 +1485,6 @@ function syncFs(){
   const btn = $("#btnFs");
   btn.hidden = full && !d;                      /* 키오스크처럼 창이 전체화면이면 이 단추로 끌 수 없으니 감춘다 */
   btn.textContent = d ? "창으로" : "전체화면";
-  document.body.classList.toggle("fs-need", !full && FS.want && FS.blocked);
 }
 function toggleFs(){
   if(docFs()){
@@ -1513,13 +1495,13 @@ function toggleFs(){
     toast("브라우저 전체화면입니다 · F11 로 끄고, 키오스크 창은 Alt+F4 로 닫습니다");
   }else{
     FS.want = true;
-    requestFs().then(syncFs, () => { FS.blocked = true; syncFs(); toast("이 브라우저가 전체화면을 막았습니다 · F11 을 눌러 주세요"); });
+    requestFs().then(syncFs, () => { syncFs(); toast("이 브라우저가 전체화면을 막았습니다 · F11 을 눌러 주세요"); });
   }
 }
 /* 사람이 누르거나 키를 누르는 순간이 전체화면으로 바꿀 수 있는 기회다 */
 function gesture(){
   FS.touchedAt = Date.now();
-  if(FS.want && !isFs()) requestFs().then(() => { FS.blocked = false; syncFs(); }, () => syncFs());
+  if(FS.want && !isFs()) requestFs().then(syncFs, syncFs);
 }
 if(navigator.permissions && navigator.permissions.query){
   /* 정책으로 '누르지 않아도 전체화면'이 허용됐는지 (②). 허용이면 통째로 새로 열어도 전체화면으로 돌아온다 */
@@ -1638,12 +1620,12 @@ addEventListener("resize", layout);
 addEventListener("mousemove", () => { wake(); FS.touchedAt = Date.now(); });
 addEventListener("pointerdown", e => {
   wake();
-  if(e.target.closest("#fsHintClose, #btnFs")) return;
+  if(e.target.closest("#btnFs")) return;
   gesture();
 }, { capture:true });
 /* 더블클릭: 전체화면 켜고 끄기. 첫 클릭이 방금 전체화면을 켰다면 그 더블클릭으로 도로 끄지 않는다 */
 addEventListener("dblclick", e => {
-  if(e.target.closest("button, .pg, .tab, .dv, .fs-hint")) return;
+  if(e.target.closest("button, .pg, .tab, .dv")) return;
   if(Date.now() - FS.enteredAt > 1200) toggleFs();
 });
 addEventListener("keydown", e => {
@@ -1673,8 +1655,6 @@ document.addEventListener("visibilitychange", () => {
 addEventListener("online", () => { paintStatus(); if(!state.demo) softReload(true); });
 addEventListener("offline", paintStatus);
 
-$("#fsHint").addEventListener("click", e => { if(!e.target.closest("#fsHintClose")) gesture(); });
-$("#fsHintClose").addEventListener("click", e => { e.stopPropagation(); FS.want = false; FS.touchedAt = Date.now(); syncFs(); });
 $("#btnFs").addEventListener("click", () => { FS.touchedAt = Date.now(); toggleFs(); });
 $("#btnWorship").addEventListener("click", toggleWorship);
 $("#dvLine").addEventListener("click", toggleWorship);
@@ -1706,9 +1686,7 @@ if(forceWorship) $("#btnWorship").textContent = "평소 화면으로";
 wake(); keepAwake();
 layout();
 tick();
-/* 열자마자 전체화면을 청한다. 막히면 안내를 12초 보이고, 그 뒤에는 마우스를 움직일 때만 보인다 */
-document.body.classList.add("fs-fresh");
-setTimeout(() => document.body.classList.remove("fs-fresh"), 12e3);
+/* 열자마자 전체화면을 청한다 (막히면 화면에 아무것도 띄우지 않고, 첫 클릭·터치·키 입력 때 바꾼다) */
 enterFs();
 addEventListener("load", enterFs, { once:true });
 

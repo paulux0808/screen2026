@@ -35,6 +35,7 @@ echo  [3/3] Opening the board...
 call "%APPDIR%\start-board.bat"
 echo.
 echo  Done. To close the board window press Alt+F4.
+echo  Tip: to stop other programs from starting with Windows, run clean-startup.bat
 ping -n 4 127.0.0.1 >nul
 exit /b 0
 

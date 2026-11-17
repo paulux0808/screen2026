@@ -26,10 +26,21 @@
 | 지금 다시 열기 | `kiosk\windows\start-board.bat` 더블클릭 |
 | 자동 실행·설정 모두 되돌리기 | `kiosk\windows\remove-board.bat` 더블클릭 |
 | 이 PC의 **모든 사용자**에게 "클릭 없이 전체화면" 허용 | `kiosk\windows\allow-auto-fullscreen.reg` 더블클릭 (관리자 권한 필요) · 되돌리기는 `remove-auto-fullscreen.reg` |
+| 원래 깔려 있던 **시작 프로그램을 모두 끄기** (알림판만 켜지게) | `kiosk\windows\clean-startup.bat` 더블클릭 · 되돌리기는 `restore-startup.bat` |
 
 - Chrome이 있으면 Chrome으로, 없으면 윈도우에 기본으로 있는 Edge로 엽니다.
 - 켜자마자 인터넷이 아직 안 붙었으면 30초까지 기다렸다가 엽니다. 인터넷이 끊겨 있어도 한 번이라도 열었던 기기라면 저장본으로 화면이 뜹니다.
 - 무인으로 돌리려면 윈도우 **자동 로그인**과 **절전 끄기**(설정 → 시스템 → 전원)를 함께 해 두세요. 알림판이 떠 있는 동안에는 화면이 꺼지지 않게 스스로 막습니다.
+
+#### 시작 프로그램 모두 끄기 — `clean-startup.bat`
+
+PC를 켤 때 메신저·업데이트 알림 같은 다른 프로그램이 같이 떠서 알림판을 가리지 않도록, 로그인할 때 저절로 켜지는 프로그램을 **한 번에 모두 끕니다.** 알림판과 Windows 보안 아이콘은 그대로 둡니다.
+
+- 더블클릭 → 관리자 확인 창에서 **예** (모든 사용자용 프로그램까지 끄려면 필요. **아니요**를 누르면 이 사용자 것만 끕니다)
+- 끄는 것: 작업 관리자의 '시작 앱' 목록 전부(레지스트리 Run 항목 · 시작프로그램 폴더 · Teams 같은 스토어 앱) + '다시 로그인하면 열려 있던 앱 다시 열기'
+- 프로그램을 지우는 것이 아니라 **작업 관리자 → 시작 앱 → '사용 안 함'** 과 같은 표시만 합니다. 다음 로그인부터 적용되고, 지금 떠 있는 프로그램은 닫지 않습니다.
+- 되돌리기: `restore-startup.bat` (끈 것을 그대로 다시 켬) 또는 작업 관리자(`Ctrl`+`Shift`+`Esc`) → 시작 앱에서 하나씩 **사용**
+- 무엇을 껐는지는 실행 창에 나오고, `%LOCALAPPDATA%\screen2026\startup-changes-날짜.json` 에도 남습니다.
 
 ### 라즈베리파이 · 리눅스
 
@@ -55,7 +66,7 @@ Chromium이 없으면 먼저 `sudo apt install chromium` (라즈베리파이 OS�
 ### 그냥 브라우저로 주소를 열었을 때
 
 - 위 설정(정책)을 해 둔 Chrome·Edge라면 **열자마자** 전체화면이 됩니다. 새로 고쳐도 1초쯤 뒤 다시 전체화면으로 돌아갑니다.
-- 아니면 화면 아래에 "화면을 한 번 누르면 전체화면이 됩니다" 안내가 잠깐 뜨고, **화면 아무 데나 한 번 누르거나(클릭·터치) 아무 키나 누르면** 전체화면이 됩니다.
+- 아니면 **화면 아무 데나 한 번 누르거나(클릭·터치) 아무 키나 누르면** 전체화면이 됩니다. 화면에 따로 안내를 띄우지는 않습니다.
 - 누가 `Esc` 로 전체화면을 끄면 그대로 두었다가, **10분 동안 아무도 만지지 않으면** 다시 전체화면으로 돌아갑니다(정책을 해 둔 브라우저에서. 아니면 다음에 누군가 화면을 누를 때).
 
 > 사이트 주소가 바뀌면 `kiosk/` 안 파일들 맨 위의 주소(`BOARD_URL`, `ORIGIN`, `.reg` 파일의 주소)도 같이 고쳐 주세요.
@@ -133,6 +144,7 @@ config.js             설정 — 시트 ID · 탭 이름 · 시정표 · 급식/
 sw.js                 오프라인 보관
 manifest.webmanifest  앱 설치 정보(전체화면으로 열림) · icon.svg · icon-192.png · icon-512.png
 kiosk/windows/        setup-board.bat(한 번 설정) · start-board.bat(열기) · remove-board.bat(되돌리기) · *.reg(자동 전체화면 정책)
+                      clean-startup.bat(시작 프로그램 모두 끄기) · restore-startup.bat(되돌리기) · clean-startup.ps1(그 내용)
 kiosk/linux/          setup-board.sh · start-board.sh · remove-board.sh
 kiosk/mac/            start-board.command
 tests/smoke.cjs       점검
