@@ -1,10 +1,13 @@
 @echo off
 setlocal EnableExtensions
 rem ===================================================================
-rem  screen2026 board : turn OFF every program that starts by itself
-rem  when someone signs in to this PC. The board (screen2026) stays on.
-rem  - Same as Task Manager > Startup apps > Disable. Nothing is deleted.
-rem  - Undo: restore-startup.bat  (or Task Manager > Startup apps > Enable)
+rem  screen2026 board : find and turn OFF everything that starts or opens
+rem  by itself when someone signs in to this PC. The board stays on.
+rem  Looks beyond Task Manager: Task Scheduler jobs, .bat/.html files in
+rem  Startup folders, RunOnce / policy Run keys, a replaced login shell,
+rem  and browser "pages to open at startup" policies.
+rem  - Shows the list first, then asks: Y = all, S = one by one, N = cancel
+rem  - Nothing is deleted: undo with restore-startup.bat
 rem  - Keep clean-startup.ps1 in the same folder as this file.
 rem ===================================================================
 if not exist "%~dp0clean-startup.ps1" goto missing
