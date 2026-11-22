@@ -254,6 +254,39 @@ const read = page => page.evaluate(() => {
   ok(!v.overlay && v.today.length >= 4 && v.next.length >= 5, "예시 자료가 그려진다");
   await page.close();
 
+  /* ── 7-1. 설치 파일 받기 (ZIP): 한 번 받으면 단추가 사라진다 ── */
+  console.log("설치 파일 받기 (ZIP)");
+  page = await ctx.newPage();
+  page.on("pageerror", e => errors.push(`setup: ${e.message}`));
+  await page.goto(base + "?date=2026-11-17&time=10:30");
+  await page.waitForTimeout(1200);
+  ok(await page.evaluate(() => !document.querySelector("#btnSetup").hidden), "처음에는 '설치 파일 받기' 단추가 있다");
+  await page.mouse.move(400, 400);
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout:15000 }), page.click("#btnSetup")]);
+  const zipPath = path.join(require("os").tmpdir(), `screen2026-${process.pid}.zip`);
+  await dl.saveAs(zipPath);
+  ok(dl.suggestedFilename() === "screen2026-windows.zip", `파일 이름: ${dl.suggestedFilename()}`);
+  const { execFileSync } = require("child_process");
+  const check = JSON.parse(execFileSync("python3", ["-I", "-c", `
+import json, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+print(json.dumps({"bad": z.testzip(), "names": z.namelist(),
+  "bat": z.read("setup-board.bat").hex(), "ps1": z.read("clean-startup.ps1").hex(),
+  "readme": z.read("README.txt")[:3].hex()}))`, zipPath]).toString());
+  const want = ["README.txt", "setup-board.bat", "start-board.bat", "remove-board.bat", "clean-startup.bat", "clean-startup.ps1", "restore-startup.bat", "allow-auto-fullscreen.reg", "remove-auto-fullscreen.reg"];
+  ok(check.bad === null, "ZIP 이 손상되지 않았다 (CRC 확인)");
+  ok(JSON.stringify(check.names) === JSON.stringify(want), `ZIP 안의 파일: ${check.names.join(", ")}`);
+  ok(check.bat === fs.readFileSync(path.join(ROOT, "kiosk/windows/setup-board.bat")).toString("hex"), "setup-board.bat 이 원본과 똑같다 (줄 끝 CRLF 유지)");
+  ok(check.ps1 === fs.readFileSync(path.join(ROOT, "kiosk/windows/clean-startup.ps1")).toString("hex"), "clean-startup.ps1 이 원본과 똑같다 (BOM 유지)");
+  ok(check.readme === "efbbbf", "README.txt 는 메모장에서 한글이 깨지지 않게 BOM 이 붙어 있다");
+  fs.unlinkSync(zipPath);
+  ok(await page.evaluate(() => document.querySelector("#btnSetup").hidden), "받은 뒤에는 단추가 사라진다");
+  await page.reload(); await page.waitForTimeout(800);
+  ok(await page.evaluate(() => document.querySelector("#btnSetup").hidden), "다시 열어도 단추가 없다 (이 기기에서 한 번만)");
+  await page.goto(base + "?setup&date=2026-11-17&time=10:30"); await page.waitForTimeout(800);
+  ok(await page.evaluate(() => !document.querySelector("#btnSetup").hidden), "?setup 을 붙이면 다시 보인다");
+  await page.close();
+
   /* ── 8. 창 모드: 안내 없이, 첫 클릭·키에 전체화면을 청한다 ── */
   console.log("창 모드 (브라우저 창이 화면보다 작음)");
   await ctx.close();
