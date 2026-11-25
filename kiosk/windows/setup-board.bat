@@ -17,6 +17,7 @@ if not exist "%HERE%start-board.bat" goto missing
 rem --- 1. copy the launcher and register it to run at sign-in ---
 if not exist "%APPDIR%" mkdir "%APPDIR%"
 copy /y "%HERE%start-board.bat" "%APPDIR%\start-board.bat" >nul
+if exist "%HERE%keep-board-front.ps1" copy /y "%HERE%keep-board-front.ps1" "%APPDIR%\keep-board-front.ps1" >nul
 set "STARTUP="
 for /f "usebackq delims=" %%S in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Startup')"`) do set "STARTUP=%%S"
 if not defined STARTUP set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"

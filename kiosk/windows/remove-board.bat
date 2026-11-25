@@ -17,6 +17,7 @@ for %%R in (HKCU HKLM) do (
   reg delete "%%R\SOFTWARE\Policies\Microsoft\Edge\AutomaticFullscreenAllowedForUrls" /v 1 /f >nul 2>&1
 )
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'chrome.exe' -or $_.Name -eq 'msedge.exe') -and $_.CommandLine -like '*screen2026-kiosk*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'powershell.exe' -and $_.CommandLine -like '*keep-board-front.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 rmdir /s /q "%APPDIR%" >nul 2>&1
 
 echo.

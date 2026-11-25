@@ -36,6 +36,9 @@ rem --- 4. open the board as a fullscreen kiosk window ---
 set "EXTRA="
 if /i not "%BROWSER:msedge=%"=="%BROWSER%" set "EXTRA=--edge-kiosk-type=fullscreen"
 start "" "%BROWSER%" --kiosk "%BOARD_URL%" %EXTRA% --user-data-dir="%PROFILE_DIR%" --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --noerrdialogs --disable-features=Translate --overscroll-history-navigation=0 --disable-pinch
+
+rem --- 5. for the first 5 minutes keep the board on top (other start-up windows must not cover it) ---
+if exist "%~dp0keep-board-front.ps1" start "" /min powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0keep-board-front.ps1"
 exit /b 0
 
 :nobrowser

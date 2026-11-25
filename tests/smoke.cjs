@@ -273,7 +273,7 @@ z = zipfile.ZipFile(sys.argv[1])
 print(json.dumps({"bad": z.testzip(), "names": z.namelist(),
   "bat": z.read("setup-board.bat").hex(), "ps1": z.read("clean-startup.ps1").hex(),
   "readme": z.read("README.txt")[:3].hex()}))`, zipPath]).toString());
-  const want = ["README.txt", "setup-board.bat", "start-board.bat", "remove-board.bat", "clean-startup.bat", "clean-startup.ps1", "restore-startup.bat", "allow-auto-fullscreen.reg", "remove-auto-fullscreen.reg"];
+  const want = ["README.txt", "setup-board.bat", "start-board.bat", "keep-board-front.ps1", "remove-board.bat", "clean-startup.bat", "clean-startup.ps1", "restore-startup.bat", "allow-auto-fullscreen.reg", "remove-auto-fullscreen.reg"];
   ok(check.bad === null, "ZIP 이 손상되지 않았다 (CRC 확인)");
   ok(JSON.stringify(check.names) === JSON.stringify(want), `ZIP 안의 파일: ${check.names.join(", ")}`);
   ok(check.bat === fs.readFileSync(path.join(ROOT, "kiosk/windows/setup-board.bat")).toString("hex"), "setup-board.bat 이 원본과 똑같다 (줄 끝 CRLF 유지)");

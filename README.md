@@ -30,6 +30,7 @@
 | 원래 깔려 있던 **시작 프로그램을 모두 끄기** (알림판만 켜지게) | `kiosk\windows\clean-startup.bat` 더블클릭 · 되돌리기는 `restore-startup.bat` |
 
 - Chrome이 있으면 Chrome으로, 없으면 윈도우에 기본으로 있는 Edge로 엽니다.
+- 연 뒤 **5분 동안은 알림판을 맨 위에 둡니다**(`keep-board-front.ps1`). 켜질 때 늦게 뜨는 다른 창(예: 자동 종료 PowerShell 창)이 알림판을 덮지 않습니다. 5분이 지나면 보통 창으로 돌아갑니다(그래도 맨 앞에 남습니다).
 - 켜자마자 인터넷이 아직 안 붙었으면 30초까지 기다렸다가 엽니다. 인터넷이 끊겨 있어도 한 번이라도 열었던 기기라면 저장본으로 화면이 뜹니다.
 - 무인으로 돌리려면 윈도우 **자동 로그인**과 **절전 끄기**(설정 → 시스템 → 전원)를 함께 해 두세요. 알림판이 떠 있는 동안에는 화면이 꺼지지 않게 스스로 막습니다.
 
@@ -158,7 +159,7 @@ index.html            알림판 (화면 · 동작 전부)
 config.js             설정 — 시트 ID · 탭 이름 · 시정표 · 급식/예배 시각
 sw.js                 오프라인 보관
 manifest.webmanifest  앱 설치 정보(전체화면으로 열림) · icon.svg · icon-192.png · icon-512.png
-kiosk/windows/        setup-board.bat(한 번 설정) · start-board.bat(열기) · remove-board.bat(되돌리기) · *.reg(자동 전체화면 정책)
+kiosk/windows/        setup-board.bat(한 번 설정) · start-board.bat(열기) · keep-board-front.ps1(처음 5분 맨 위) · remove-board.bat(되돌리기) · *.reg(자동 전체화면 정책)
                       clean-startup.bat(시작 프로그램 모두 끄기) · restore-startup.bat(되돌리기) · clean-startup.ps1(그 내용)
 kiosk/linux/          setup-board.sh · start-board.sh · remove-board.sh
 kiosk/mac/            start-board.command
